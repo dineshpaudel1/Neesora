@@ -1,0 +1,7 @@
+{% if messages %}
+    <div class="messages page-width" role="status" aria-live="polite">
+        {% for message in messages %}
+            <p class="message message-{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}

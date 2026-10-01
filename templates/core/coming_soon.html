@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | {{ site_name }}{% endblock %}
+{% block meta_description %}{{ page_title }} at {{ site_name }} is coming soon. Contact us in Lalitpur, Nepal for help.{% endblock %}
+{% block content %}
+<section class="coming-soon page-width">
+    <p class="eyebrow">{{ site_name }} / Coming soon</p>
+    <h1>{{ page_title }}</h1>
+    <p>We are preparing this part of the Neesora experience. Please check back soon.</p>
+    <a class="button button-dark" href="{% url 'core:home' %}">Back to home <span aria-hidden="true">→</span></a>
+</section>
+{% endblock %}

@@ -12,8 +12,8 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: neesora.onrender.com,neesora-footer-preview.onrender.com
+        value: neesora.onrender.com
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://neesora.onrender.com,https://neesora-footer-preview.onrender.com
+        value: https://neesora.onrender.com
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.console.EmailBackend

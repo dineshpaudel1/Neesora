@@ -4,7 +4,7 @@
         <div class="footer-brand">
             <a class="brand brand-footer" href="{% url 'core:home' %}">
                 <img class="brand-logo" src="{% static 'images/websitelogo.png' %}" alt="">
-                <span>{{ site_name }}</span>
+                <span>{{ site_name|lower }}</span>
             </a>
 
             <p>{{ site_description }}</p>

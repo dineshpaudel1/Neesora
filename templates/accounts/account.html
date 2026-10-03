@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}My account | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width account-section">
+    <div class="account-panel">
+        <h1>My account</h1>
+        <p>Welcome, {{ request.user.get_full_name|default:request.user.username }}.</p>
+        <div class="account-actions">
+            <a class="button button-dark" href="{% url 'accounts:profile' %}">Edit profile</a>
+            <a class="button button-secondary" href="{% url 'orders:orders' %}">View orders</a>
+            <a class="button button-secondary" href="{% url 'accounts:logout' %}">Logout</a>
+        </div>
+    </div>
+
+    <div class="account-details">
+        <h2>Profile</h2>
+        <div class="detail-list">
+            <p><strong>Name:</strong> {{ profile.display_name }}</p>
+            <p><strong>Phone:</strong> {{ profile.phone_number|default:'Not provided' }}</p>
+            <p><strong>Email:</strong> {{ request.user.email|default:'Not provided' }}</p>
+            <p><strong>Address:</strong> {{ profile.address|default:'Not provided' }}</p>
+            <p><strong>City:</strong> {{ profile.city|default:'Not provided' }}</p>
+            <p><strong>Province:</strong> {{ profile.province|default:'Not provided' }}</p>
+            <p><strong>Postal code:</strong> {{ profile.postal_code|default:'Not provided' }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

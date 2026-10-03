@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ category.name }} | {{ site_name }}{% endblock %}
+{% block meta_description %}Explore {{ category.name }} bags from Neesora and discover the right fit for your day.{% endblock %}
+
+{% block content %}
+<section class="page-width category-header">
+    <div class="category-header-copy">
+        <p class="eyebrow">{{ site_name }} collection</p>
+        <h1>{{ category.name }}</h1>
+        {% if category.description %}<p>{{ category.description }}</p>{% else %}<p>Explore considered styles for everyday plans, work, and journeys.</p>{% endif %}
+    </div>
+    <div class="category-header-image">
+        {% if category.image %}
+            <img src="{{ category.image.url }}" alt="{{ category.name }} bags">
+        {% else %}
+            <img src="{% static 'images/pone.jpg' %}" alt="{{ category.name }} bags">
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-width shop-layout">
+    <aside class="filter-sidebar">
+        <h2>Filter products</h2>
+        <form method="get" action="{% url 'products:category' category.slug %}" class="filter-form">
+            <div class="filter-group">
+                <label for="category-filter">Category</label>
+                <select id="category-filter" name="category">
+                    <option value="">All categories</option>
+                    {% for item in categories %}
+                        <option value="{{ item.id }}" {% if selected_category == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="price-min">Min price</label>
+                <input id="price-min" type="number" name="price_min" value="{{ price_min }}" min="0" step="100">
+            </div>
+
+            <div class="filter-group">
+                <label for="price-max">Max price</label>
+                <input id="price-max" type="number" name="price_max" value="{{ price_max }}" min="0" step="100">
+            </div>
+
+            <div class="filter-group">
+                <label for="availability-filter">Availability</label>
+                <select id="availability-filter" name="availability">
+                    <option value="">All items</option>
+                    <option value="in_stock" {% if availability == 'in_stock' %}selected{% endif %}>In stock</option>
+                    <option value="out_of_stock" {% if availability == 'out_of_stock' %}selected{% endif %}>Out of stock</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="sort-filter">Sort by</label>
+                <select id="sort-filter" name="sort">
+                    <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
+                    <option value="price_low_high" {% if sort == 'price_low_high' %}selected{% endif %}>Price: Low to high</option>
+                    <option value="price_high_low" {% if sort == 'price_high_low' %}selected{% endif %}>Price: High to low</option>
+                    <option value="popularity" {% if sort == 'popularity' %}selected{% endif %}>Popularity</option>
+                </select>
+            </div>
+
+            <button type="submit" class="button button-dark filter-submit">Apply filters</button>
+            <a class="filter-reset" href="{% url 'products:category' category.slug %}">Reset</a>
+        </form>
+    </aside>
+
+    <div class="catalogue">
+        {% if products %}
+            <div class="product-grid">
+                {% for product in products %}
+                    {% cycle 'images/pone.jpg' 'images/ptwo.jpg' 'images/pthree.jpg' 'images/pfour.jpg' as product_fallback silent %}
+                    {% include "includes/product_card.html" with product=product fallback_image=product_fallback %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-collection shop-empty">
+                <span class="empty-mark" aria-hidden="true">N</span>
+                <h3>Nothing in this category yet.</h3>
+                <p>We are preparing this collection for you. Check back soon for new arrivals.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

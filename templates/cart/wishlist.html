@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Wishlist | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width cart-page">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Saved items</p>
+            <h1>Wishlist</h1>
+        </div>
+        <span class="muted-text">{{ wishlist_count }} item{{ wishlist_count|pluralize }}</span>
+    </div>
+
+    {% if wishlist_items %}
+        <div class="wishlist-grid">
+            {% for item in wishlist_items %}
+                {% with product=item.product %}
+                    <article class="wishlist-card">
+                        <div class="wishlist-card-image">
+                            {% if product.images.first %}
+                                <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+                            {% else %}
+                                <div class="product-card-placeholder medium-placeholder"><span>{{ product.name|slice:':1' }}</span></div>
+                            {% endif %}
+                        </div>
+                        <div class="wishlist-card-body">
+                            <h3>{{ product.name }}</h3>
+                            <p>NPR {{ product.selling_price }}</p>
+                            <div class="wishlist-actions">
+                                <a href="{% url 'products:product_detail' product.slug %}" class="button button-dark">View item</a>
+                                <form method="post" action="{% url 'cart:remove_from_wishlist' product.pk %}">
+                                    {% csrf_token %}
+                                    <button class="button button-secondary" type="submit">Remove</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-collection">
+            <div class="empty-mark">W</div>
+            <h3>Your wishlist is empty</h3>
+            <p>Save your favourite bags and come back anytime.</p>
+            <a href="{% url 'products:shop' %}" class="button button-dark">Browse products</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}My orders | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width cart-page">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Order history</p>
+            <h1>My orders</h1>
+        </div>
+    </div>
+
+    {% if orders %}
+        <div class="order-list">
+            {% for order in orders %}
+                <article class="order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <p class="order-number">{{ order.order_number }}</p>
+                            <span>{{ order.created_at|date:"d M Y" }}</span>
+                        </div>
+                        <span class="order-status status-{{ order.order_status }}">{{ order.order_status|title }}</span>
+                    </div>
+                    <div class="order-card-meta">
+                        <span>Total: NPR {{ order.total_amount }}</span>
+                        <span>{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+                    </div>
+                    <a class="button button-secondary" href="{% url 'orders:order_detail' order.order_number %}">View details</a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-collection">
+            <div class="empty-mark">O</div>
+            <h3>No orders yet</h3>
+            <p>Your completed orders will appear here once placed.</p>
+            <a href="{% url 'products:shop' %}" class="button button-dark">Shop bags</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

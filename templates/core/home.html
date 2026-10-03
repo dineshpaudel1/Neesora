@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Neesora — Bags for Every Journey{% endblock %}
 {% block meta_description %}Thoughtfully chosen bags for everyday life, work, school, and travel. Discover Neesora in Lalitpur, Nepal.{% endblock %}
@@ -12,19 +13,45 @@
             <p class="eyebrow">Made for the days ahead</p>
             <h1>Carry what<br>moves you.</h1>
             <p class="hero-description">Thoughtfully chosen bags for the places you go and the things you do every day.</p>
-            <a class="button button-dark" href="{% url 'core:shop' %}">Explore the collection <span aria-hidden="true">→</span></a>
+            <a class="button button-dark" href="{% url 'products:shop' %}">Explore the collection <span aria-hidden="true">→</span></a>
             <p class="hero-note">From Lalitpur, with care.</p>
         </div>
-        <div class="hero-art" role="img" aria-label="Neesora — bags for every journey">
+        <div class="hero-art">
+            <img class="hero-photo" src="{% static 'images/pone.jpg' %}" alt="Neesora handbags in warm neutral and blue tones">
             <div class="hero-art-copy">
-                <span>NEESORA / EVERYDAY GOODS</span>
-                <span class="hero-art-title">A little more<br>room to roam.</span>
+                <span>NEESORA / BAGS FOR EVERY JOURNEY</span>
+                <span class="hero-art-title">Carry a little<br>more beautifully.</span>
                 <span>LALITPUR · NEPAL</span>
             </div>
-            <div class="hero-shape hero-shape-one" aria-hidden="true"></div>
-            <div class="hero-shape hero-shape-two" aria-hidden="true"></div>
-            <span class="hero-art-index" aria-hidden="true">01 — 04</span>
         </div>
+    </div>
+</section>
+
+<section class="photo-collection-section page-width" aria-labelledby="photo-collection-title">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">A closer look</p>
+            <h2 id="photo-collection-title">Bags for your everyday</h2>
+        </div>
+        <a class="text-link" href="{% url 'products:shop' %}">Explore the shop <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="photo-collection-grid">
+        <a class="photo-collection-card" href="{% url 'products:shop' %}">
+            <img src="{% static 'images/pone.jpg' %}" alt="A selection of Neesora handbags">
+            <span>Everyday favourites</span>
+        </a>
+        <a class="photo-collection-card" href="{% url 'products:shop' %}">
+            <img src="{% static 'images/ptwo.jpg' %}" alt="A structured green handbag with matching accessories">
+            <span>Considered details</span>
+        </a>
+        <a class="photo-collection-card" href="{% url 'products:shop' %}">
+            <img src="{% static 'images/pthree.jpg' %}" alt="Compact crossbody bags in brown and black">
+            <span>Made to go with you</span>
+        </a>
+        <a class="photo-collection-card" href="{% url 'products:shop' %}">
+            <img src="{% static 'images/pfour.jpg' %}" alt="A textured handbag with contrasting handles">
+            <span>Room for your day</span>
+        </a>
     </div>
 </section>
 
@@ -43,20 +70,48 @@
                 <p class="eyebrow">Find your kind of carry</p>
                 <h2>Explore categories</h2>
             </div>
-            <a class="text-link" href="{% url 'core:shop' %}">View all <span aria-hidden="true">→</span></a>
+            <a class="text-link" href="{% url 'products:shop' %}">View all <span aria-hidden="true">→</span></a>
         </div>
         <div class="category-grid">
-            <a class="category-tile category-tile-one" href="{% url 'core:shop' %}">
-                <span class="category-number">01</span><span>Everyday bags</span><span aria-hidden="true">↗</span>
-            </a>
-            <a class="category-tile category-tile-two" href="{% url 'core:shop' %}">
-                <span class="category-number">02</span><span>Work &amp; study</span><span aria-hidden="true">↗</span>
-            </a>
-            <a class="category-tile category-tile-three" href="{% url 'core:shop' %}">
-                <span class="category-number">03</span><span>Travel &amp; beyond</span><span aria-hidden="true">↗</span>
-            </a>
+            {% if home_categories %}
+                {% for category in home_categories %}
+                    {% cycle 'images/pone.jpg' 'images/ptwo.jpg' 'images/pthree.jpg' 'images/pfour.jpg' as category_fallback silent %}
+                    <a class="category-tile" href="{% url 'products:category' category.slug %}">
+                        {% if category.image %}
+                            <img class="category-tile-image" src="{{ category.image.url }}" alt="{{ category.name }}">
+                        {% else %}
+                            <img class="category-tile-image" src="{% static category_fallback %}" alt="{{ category.name }}">
+                        {% endif %}
+                        <span class="category-number">{{ forloop.counter|stringformat:"02d" }}</span>
+                        <span class="category-tile-copy">
+                            <span>{{ category.name }}</span>
+                            {% if category.description %}<span class="category-tile-description">{{ category.description|striptags|truncatechars:74 }}</span>{% endif %}
+                        </span>
+                        <span class="category-tile-arrow" aria-hidden="true">↗</span>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <a class="category-tile" href="{% url 'products:shop' %}">
+                    <img class="category-tile-image" src="{% static 'images/ptwo.jpg' %}" alt="">
+                    <span class="category-number">01</span>
+                    <span class="category-tile-copy"><span>Handbags</span><span class="category-tile-description">Polished styles for everyday plans.</span></span>
+                    <span class="category-tile-arrow" aria-hidden="true">↗</span>
+                </a>
+                <a class="category-tile" href="{% url 'products:shop' %}">
+                    <img class="category-tile-image" src="{% static 'images/pfour.jpg' %}" alt="">
+                    <span class="category-number">02</span>
+                    <span class="category-tile-copy"><span>Work &amp; study</span><span class="category-tile-description">Room for everything on your list.</span></span>
+                    <span class="category-tile-arrow" aria-hidden="true">↗</span>
+                </a>
+                <a class="category-tile" href="{% url 'products:shop' %}">
+                    <img class="category-tile-image" src="{% static 'images/pone.jpg' %}" alt="">
+                    <span class="category-number">03</span>
+                    <span class="category-tile-copy"><span>Travel &amp; beyond</span><span class="category-tile-description">Ready for a change of scenery.</span></span>
+                    <span class="category-tile-arrow" aria-hidden="true">↗</span>
+                </a>
+            {% endif %}
         </div>
-        <p class="section-footnote">Our full range of bags is coming soon.</p>
+        {% if not home_categories %}<p class="section-footnote">Explore the shop to see the latest collection.</p>{% endif %}
     </div>
 </section>
 
@@ -66,14 +121,23 @@
             <p class="eyebrow">A few favorites</p>
             <h2>Featured finds</h2>
         </div>
-        <a class="text-link" href="{% url 'core:shop' %}">Shop all <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="{% url 'products:shop' %}">Shop all <span aria-hidden="true">→</span></a>
     </div>
-    <div class="empty-collection">
-        <span class="empty-mark" aria-hidden="true">N</span>
-        <h3>Something good is taking shape.</h3>
-        <p>Our featured bags will be here soon. In the meantime, say hello to our team in Lalitpur.</p>
-        <a class="text-link" href="mailto:{{ site_email }}">Talk to Neesora <span aria-hidden="true">→</span></a>
-    </div>
+    {% if featured_products %}
+        <div class="product-grid">
+            {% for product in featured_products %}
+                {% cycle 'images/pone.jpg' 'images/ptwo.jpg' 'images/pthree.jpg' 'images/pfour.jpg' as product_fallback silent %}
+                {% include "includes/product_card.html" with product=product fallback_image=product_fallback %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-collection">
+            <span class="empty-mark" aria-hidden="true">N</span>
+            <h3>Our first collection is taking shape.</h3>
+            <p>Explore the collection photos above and check back as new products are added.</p>
+            <a class="text-link" href="mailto:{{ site_email }}">Talk to Neesora <span aria-hidden="true">→</span></a>
+        </div>
+    {% endif %}
 </section>
 
 <section class="new-arrivals-section">
@@ -84,7 +148,7 @@
         </div>
         <div class="new-arrivals-note">
             <p>We are getting our first collection ready. Check back soon to discover everyday essentials chosen with care.</p>
-            <a class="button button-light" href="{% url 'core:shop' %}">Visit the shop <span aria-hidden="true">→</span></a>
+            <a class="button button-light" href="{% url 'products:shop' %}">Visit the shop <span aria-hidden="true">→</span></a>
         </div>
     </div>
 </section>

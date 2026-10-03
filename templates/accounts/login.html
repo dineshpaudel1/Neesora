@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Login | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width auth-page">
+    <div class="auth-card">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Login to Neesora</h1>
+        {% if google_login_enabled %}
+            {% include "includes/google_login_button.html" %}
+            <div class="social-login-divider">or log in with email</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+            {{ form.as_p }}
+            <button class="button button-dark" type="submit">Login</button>
+        </form>
+        <p class="auth-link-row">
+            Need an account? <a href="{% url 'accounts:register' %}">Create one</a>
+        </p>
+        <p class="auth-link-row">
+            <a href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+        </p>
+        {% if not google_login_enabled %}
+            <p class="google-login-note">Google sign-in will be available after the store’s Google OAuth credentials are configured.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

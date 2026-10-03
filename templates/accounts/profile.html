@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Edit profile | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width form-layout">
+    <div class="content-card">
+        <p class="eyebrow">Account settings</p>
+        <h1>Edit profile</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-grid">
+                <label>
+                    <span>Full name</span>
+                    <input type="text" name="full_name" value="{{ profile.full_name|default:'' }}">
+                </label>
+                <label>
+                    <span>Phone number</span>
+                    <input type="text" name="phone_number" value="{{ profile.phone_number|default:'' }}">
+                </label>
+                <label>
+                    <span>Address</span>
+                    <input type="text" name="address" value="{{ profile.address|default:'' }}">
+                </label>
+                <label>
+                    <span>City</span>
+                    <input type="text" name="city" value="{{ profile.city|default:'' }}">
+                </label>
+                <label>
+                    <span>Province</span>
+                    <input type="text" name="province" value="{{ profile.province|default:'' }}">
+                </label>
+                <label>
+                    <span>Postal code</span>
+                    <input type="text" name="postal_code" value="{{ profile.postal_code|default:'' }}">
+                </label>
+                <label class="full-width">
+                    <span>Profile image</span>
+                    <input type="file" name="profile_image" accept="image/*">
+                </label>
+            </div>
+            <button class="button button-dark" type="submit">Save profile</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% load static %}
+<article class="product-card">
+    <div class="product-card-image-wrap">
+        {% with product.images.first as primary_image %}
+            {% if primary_image %}
+                <img src="{{ primary_image.image.url }}" alt="{{ product.name }}" class="product-card-image">
+            {% elif fallback_image %}
+                <img src="{% static fallback_image %}" alt="{{ product.name }}" class="product-card-image">
+            {% else %}
+                <img src="{% static 'images/pone.jpg' %}" alt="{{ product.name }}" class="product-card-image">
+            {% endif %}
+        {% endwith %}
+    </div>
+    <div class="product-card-content">
+        <p class="product-category">{{ product.category.name }}</p>
+        <h3><a href="{% url 'products:product_detail' product.slug %}">{{ product.name }}</a></h3>
+        <div class="product-price-row">
+            {% if product.discount_price %}
+                <span class="product-price current-price">NPR {{ product.discount_price }}</span>
+                <span class="product-price original-price">NPR {{ product.price }}</span>
+            {% else %}
+                <span class="product-price current-price">NPR {{ product.price }}</span>
+            {% endif %}
+        </div>
+    </div>
+</article>

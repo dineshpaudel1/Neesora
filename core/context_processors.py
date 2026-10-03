@@ -12,4 +12,5 @@ def site_information(request):
         "site_email": settings.SITE_EMAIL,
         "site_currency": settings.CURRENCY_CODE,
         "site_shipping_fee": settings.FLAT_SHIPPING_FEE,
+        "google_login_enabled": settings.GOOGLE_LOGIN_ENABLED,
     }

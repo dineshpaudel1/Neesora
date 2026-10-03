@@ -1,8 +1,9 @@
+{% load static %}
 <footer class="site-footer">
     <div class="footer-main page-width">
         <div class="footer-brand">
             <a class="brand brand-footer" href="{% url 'core:home' %}">
-                <span class="brand-mark" aria-hidden="true">N</span>
+                <img class="brand-logo" src="{% static 'images/websitelogo.png' %}" alt="">
                 <span>{{ site_name }}</span>
             </a>
             <p>{{ site_description }}</p>
@@ -12,7 +13,7 @@
         <div class="footer-column">
             <h2>Quick links</h2>
             <a href="{% url 'core:home' %}">Home</a>
-            <a href="{% url 'core:shop' %}">Shop</a>
+            <a href="{% url 'products:shop' %}">Shop</a>
             <a href="{% url 'core:home' %}#about">About</a>
             <a href="{% url 'core:home' %}#contact">Contact</a>
             <a href="{% url 'core:privacy' %}">Privacy policy</a>

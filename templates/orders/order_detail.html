@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Order {{ order.order_number }} | {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="page-width cart-page">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Order details</p>
+            <h1>{{ order.order_number }}</h1>
+        </div>
+        <span class="order-status status-{{ order.order_status }}">{{ order.order_status|title }}</span>
+    </div>
+
+    <div class="order-layout">
+        <div class="content-card">
+            <h2>Products</h2>
+            {% for item in order.items.all %}
+                <div class="order-item-row">
+                    <div>
+                        <strong>{{ item.product_name }}</strong>
+                        <p>Qty: {{ item.quantity }}</p>
+                    </div>
+                    <span>NPR {{ item.line_total }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <aside class="cart-summary">
+            <h3>Order summary</h3>
+            <div class="summary-row"><span>Subtotal</span><span>NPR {{ order.subtotal }}</span></div>
+            <div class="summary-row"><span>Shipping</span><span>NPR {{ order.shipping_fee }}</span></div>
+            <div class="summary-row"><span>Discount</span><span>- NPR {{ order.discount_amount }}</span></div>
+            <div class="summary-row total-row"><span>Total</span><strong>NPR {{ order.total_amount }}</strong></div>
+            <div class="summary-row"><span>Payment</span><span>{{ order.get_payment_method_display }}</span></div>
+            <div class="summary-row"><span>Status</span><span>{{ order.get_order_status_display }}</span></div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

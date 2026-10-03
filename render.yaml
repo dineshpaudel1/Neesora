@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: neesora-footer-preview
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: neesora-footer-preview.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://neesora-footer-preview.onrender.com
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.console.EmailBackend

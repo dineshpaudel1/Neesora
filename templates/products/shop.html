@@ -1,85 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}Shop | {{ site_name }}{% endblock %}
-{% block meta_description %}Browse Neesora bags across our collection of everyday carry, work, school, travel, and lifestyle essentials.{% endblock %}
+{% block title %}{% if search_term %}Search bags |{% else %}Shop all bags |{% endif %} {{ site_name }}{% endblock %}
+{% block meta_description %}Browse available bags from Neesora, based in Lalitpur, Nepal.{% endblock %}
 
 {% block content %}
 <section class="page-width shop-header">
-    <p class="eyebrow">{{ site_name }}</p>
-    <h1>
-        {% if search_term %}
-            Search results for “{{ search_term }}”
-        {% else %}
-            Shop all bags
-        {% endif %}
-    </h1>
+    <p class="eyebrow">{{ site_name }} collection</p>
+    <h1>{% if search_term %}Search results for “{{ search_term }}”{% else %}Shop all bags{% endif %}</h1>
+    {% if products %}
+        <p class="catalogue-count">{{ product_count }} {% if product_count == 1 %}bag{% else %}bags{% endif %}</p>
+    {% endif %}
 </section>
 
 <section class="page-width shop-layout">
-    <aside class="filter-sidebar">
-        <h2>Filter products</h2>
-        <form method="get" action="{% if search_term %}{% url 'products:search' %}{% else %}{% url 'products:shop' %}{% endif %}" class="filter-form">
-            {% if search_term %}
-                <input type="hidden" name="q" value="{{ search_term }}">
-            {% endif %}
-
-            <div class="filter-group">
-                <label for="category-filter">Category</label>
-                <select id="category-filter" name="category">
-                    <option value="">All categories</option>
-                    {% for category in categories %}
-                        <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="price-min">Min price</label>
-                <input id="price-min" type="number" name="price_min" value="{{ price_min }}" min="0" step="100">
-            </div>
-
-            <div class="filter-group">
-                <label for="price-max">Max price</label>
-                <input id="price-max" type="number" name="price_max" value="{{ price_max }}" min="0" step="100">
-            </div>
-
-            <div class="filter-group">
-                <label for="availability-filter">Availability</label>
-                <select id="availability-filter" name="availability">
-                    <option value="">All items</option>
-                    <option value="in_stock" {% if availability == 'in_stock' %}selected{% endif %}>In stock</option>
-                    <option value="out_of_stock" {% if availability == 'out_of_stock' %}selected{% endif %}>Out of stock</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="sort-filter">Sort by</label>
-                <select id="sort-filter" name="sort">
-                    <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Latest</option>
-                    <option value="price_low_high" {% if sort == 'price_low_high' %}selected{% endif %}>Price: Low to high</option>
-                    <option value="price_high_low" {% if sort == 'price_high_low' %}selected{% endif %}>Price: High to low</option>
-                    <option value="popularity" {% if sort == 'popularity' %}selected{% endif %}>Popularity</option>
-                </select>
-            </div>
-
-            <button type="submit" class="button button-dark filter-submit">Apply filters</button>
-            <a class="filter-reset" href="{% if search_term %}{% url 'products:search' %}{% else %}{% url 'products:shop' %}{% endif %}">Reset</a>
-        </form>
-    </aside>
-
     <div class="catalogue">
         {% if products %}
             <div class="product-grid">
                 {% for product in products %}
-                    {% cycle 'images/pone.jpg' 'images/ptwo.jpg' 'images/pthree.jpg' 'images/pfour.jpg' as product_fallback silent %}
-                    {% include "includes/product_card.html" with product=product fallback_image=product_fallback %}
+                    {% include "includes/product_card.html" with product=product %}
                 {% endfor %}
             </div>
         {% else %}
             <div class="empty-collection shop-empty">
                 <span class="empty-mark" aria-hidden="true">N</span>
-                <h3>No products match your search.</h3>
-                <p>Try another keyword, change the category, or reset the filters to see the full collection.</p>
+                <h2>{% if search_term %}No bags found for “{{ search_term }}”.{% else %}No bags are available right now.{% endif %}</h2>
+                <p>{% if search_term %}Try another search, or browse the full collection.{% else %}Please check back soon, or contact us for help.{% endif %}</p>
+                {% if search_term %}<a class="text-link" href="{% url 'products:shop' %}">View all bags <span aria-hidden="true">→</span></a>{% endif %}
             </div>
         {% endif %}
     </div>

@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from products.models import Product
@@ -18,19 +19,39 @@ def _get_session_key(request):
 
 def _get_cart_items(request):
     if request.user.is_authenticated:
-        return CartItem.objects.filter(user=request.user).select_related('product__category')
-    return CartItem.objects.filter(session_key=_get_session_key(request)).select_related('product__category')
+        return (
+            CartItem.objects.filter(user=request.user)
+            .select_related('product__category')
+            .prefetch_related('product__images')
+        )
+    return (
+        CartItem.objects.filter(session_key=_get_session_key(request))
+        .select_related('product__category')
+        .prefetch_related('product__images')
+    )
 
 
 def _get_wishlist_items(request):
     if request.user.is_authenticated:
-        return WishlistItem.objects.filter(user=request.user).select_related('product__category')
-    return WishlistItem.objects.filter(session_key=_get_session_key(request)).select_related('product__category')
+        return (
+            WishlistItem.objects.filter(user=request.user)
+            .select_related('product__category')
+            .prefetch_related('product__images')
+        )
+    return (
+        WishlistItem.objects.filter(session_key=_get_session_key(request))
+        .select_related('product__category')
+        .prefetch_related('product__images')
+    )
 
 
 def _safe_redirect(request, fallback_name, **kwargs):
     next_url = request.POST.get('next') or request.GET.get('next')
-    if next_url and not next_url.startswith('http'):
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
         return redirect(next_url)
     return redirect(fallback_name, **kwargs)
 
@@ -42,7 +63,11 @@ def add_to_cart(request, product_id):
         messages.error(request, 'This product is currently out of stock.')
         return _safe_redirect(request, 'products:product_detail', slug=product.slug)
 
-    quantity = int(request.POST.get('quantity', 1) or 1)
+    try:
+        quantity = int(request.POST.get('quantity', 1) or 1)
+    except ValueError:
+        messages.warning(request, 'Please choose a valid quantity.')
+        return _safe_redirect(request, 'products:product_detail', slug=product.slug)
     if quantity <= 0:
         messages.warning(request, 'Please choose a valid quantity.')
         return _safe_redirect(request, 'products:product_detail', slug=product.slug)
@@ -76,7 +101,11 @@ def add_to_cart(request, product_id):
 @require_POST
 def update_cart_quantity(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
-    quantity = int(request.POST.get('quantity', 1) or 1)
+    try:
+        quantity = int(request.POST.get('quantity', 1) or 1)
+    except ValueError:
+        messages.warning(request, 'Please enter a valid quantity.')
+        return redirect('cart:cart')
     if quantity <= 0:
         return remove_from_cart(request, product_id)
 
@@ -85,7 +114,10 @@ def update_cart_quantity(request, product_id):
     else:
         item = get_object_or_404(CartItem, session_key=_get_session_key(request), product=product)
 
-    if product.stock_quantity and quantity > product.stock_quantity:
+    if product.product_status != Product.STATUS_PUBLISHED or product.stock_quantity <= 0:
+        messages.error(request, 'This product is no longer available.')
+        return redirect('cart:cart')
+    if quantity > product.stock_quantity:
         quantity = product.stock_quantity
         messages.warning(request, 'Only available stock has been added.')
     item.quantity = quantity
@@ -144,6 +176,10 @@ def cart_detail(request):
         'subtotal': subtotal,
         'shipping_fee': shipping_fee,
         'item_count': sum(item.quantity for item in items),
+        'unavailable_items': [
+            item for item in items
+            if not item.product.is_available or item.quantity > item.product.stock_quantity
+        ],
     }
     return render(request, 'cart/cart.html', context)
 

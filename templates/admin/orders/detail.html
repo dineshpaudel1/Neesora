@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading">
+    <div><p class="eyebrow">Orders / {{ order.order_number }}</p><h1>Order {{ order.order_number }}</h1><p>Placed {{ order.created_at|date:"M j, Y · g:i A" }}</p></div>
+    <div class="admin-heading-actions"><a class="admin-secondary-button" href="{% url 'myadmin:orders' %}">Back to orders</a><button class="admin-secondary-button" type="button" data-print-order>Print order</button></div>
+</div>
+<div class="invoice-store"><strong>{{ site_name }}</strong><span>{{ site_address }}</span><span>{{ site_phone }} · {{ site_email }}</span></div>
+<div class="admin-order-grid">
+    <section class="admin-panel admin-order-main">
+        <div class="admin-section-title"><div><p class="eyebrow">Order contents</p><h2>Items</h2></div><span class="order-status-chip">{{ order.get_order_status_display }}</span></div>
+        <div class="admin-table-scroll"><table class="admin-data-table"><thead><tr><th>Product</th><th>Quantity</th><th>Unit price</th><th>Line total</th></tr></thead><tbody>
+            {% for item in order.items.all %}<tr><td><strong>{{ item.product_name }}</strong></td><td>{{ item.quantity }}</td><td>{{ site_currency }} {{ item.unit_price|floatformat:2 }}</td><td>{{ site_currency }} {{ item.line_total|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">No line items were recorded.</td></tr>{% endfor %}
+        </tbody></table></div>
+        <dl class="admin-order-totals"><div><dt>Subtotal</dt><dd>{{ site_currency }} {{ order.subtotal|floatformat:2 }}</dd></div><div><dt>Shipping</dt><dd>{{ site_currency }} {{ order.shipping_fee|floatformat:2 }}</dd></div><div><dt>Discount</dt><dd>− {{ site_currency }} {{ order.discount_amount|floatformat:2 }}</dd></div><div class="admin-order-grand-total"><dt>Order total</dt><dd>{{ site_currency }} {{ order.total_amount|floatformat:2 }}</dd></div></dl>
+    </section>
+    <aside class="admin-order-aside">
+        <section class="admin-panel admin-order-info"><p class="eyebrow">Customer</p><h2>{{ order.customer_name }}</h2>{% if order.email %}<p><a href="mailto:{{ order.email }}">{{ order.email }}</a></p>{% endif %}<p><a href="tel:{{ order.phone_number }}">{{ order.phone_number }}</a></p>
+            {% if order.user and not order.user.is_staff %}<a class="admin-row-action" href="{% url 'myadmin:customer_detail' order.user.pk %}">View customer profile →</a>{% endif %}
+        </section>
+        <section class="admin-panel admin-order-info"><p class="eyebrow">Delivery address</p><p>{{ order.address }}<br>Ward {{ order.ward_number }}, {{ order.city }}<br>{{ order.district }}, {{ order.province }}{% if order.postal_code %} {{ order.postal_code }}{% endif %}</p>{% if order.order_notes %}<h3>Delivery instructions</h3><p>{{ order.order_notes|linebreaksbr }}</p>{% endif %}</section>
+        <section class="admin-panel admin-order-info">
+            <p class="eyebrow">Payment</p><h2>{{ order.get_payment_method_display }}</h2><p>Status: <strong>{{ order.payment_status|title }}</strong></p>
+            {% if order.payment_record %}
+                <p>Recorded amount: <strong>{{ site_currency }} {{ order.payment_record.amount|floatformat:2 }}</strong></p>
+                {% if order.payment_record.collected_at %}<p>Collected {{ order.payment_record.collected_at|date:"M j, Y · g:i A" }}{% if order.payment_record.collected_by %} by {{ order.payment_record.collected_by.get_full_name|default:order.payment_record.collected_by.username }}{% endif %}</p>{% endif %}
+                {% if order.payment_record.status == "pending" %}
+                    {% if order.order_status == "shipped" or order.order_status == "delivered" %}
+                        <form method="post" action="{% url 'myadmin:confirm_payment' order.pk %}" data-confirm="Confirm that the cash-on-delivery amount has actually been collected?">
+                            {% csrf_token %}<button class="admin-primary-button" type="submit">Confirm COD collected</button>
+                        </form>
+                    {% else %}<p class="admin-readonly-note">Confirm COD collection after the order has shipped.</p>{% endif %}
+                {% endif %}
+            {% else %}<p class="admin-readonly-note">No payment record exists for this legacy order.</p>{% endif %}
+        </section>
+        {% if status_form.fields.order_status.choices %}
+            <section class="admin-panel admin-order-info">
+                <p class="eyebrow">Fulfillment</p><h2>Update status</h2>
+                <form method="post" action="{% url 'myadmin:order_status' order.pk %}" {% if can_cancel %}data-confirm="Cancel this order? Any stock deducted at checkout will be restored."{% endif %}>
+                    {% csrf_token %}
+                    <label class="admin-form-field">{{ status_form.order_status.label }}{{ status_form.order_status }}</label>
+                    <label class="admin-form-field">{{ status_form.note.label }}{{ status_form.note }}</label>
+                    <button class="admin-primary-button" type="submit">Save status</button>
+                </form>
+            </section>
+        {% endif %}
+    </aside>
+</div>
+<section class="admin-panel admin-order-history">
+    <div class="admin-section-title"><div><p class="eyebrow">Audit trail</p><h2>Status history</h2></div></div>
+    <ol class="admin-status-history">
+        {% for entry in order.status_history.all %}
+            <li><strong>{{ entry.get_new_status_display }}</strong><time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"M j, Y · g:i A" }}</time><span>{% if entry.actor %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% else %}Customer / system{% endif %}</span>{% if entry.note %}<p>{{ entry.note|linebreaksbr }}</p>{% endif %}</li>
+        {% empty %}<li>No status changes have been recorded.</li>{% endfor %}
+    </ol>
+</section>
+{% endblock %}

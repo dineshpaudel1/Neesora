@@ -19,11 +19,13 @@
                     {% with product=item.product %}
                         <article class="cart-item">
                             <div class="cart-item-image">
-                                {% if product.images.first %}
-                                    <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+                                {% with product.images.all|first as primary_image %}
+                                    {% if primary_image %}
+                                    <img src="{{ primary_image.image.url }}" alt="{{ primary_image.alt_text|default:product.name }}" loading="lazy" decoding="async">
                                 {% else %}
-                                    <div class="product-card-placeholder small-placeholder"><span>{{ product.name|slice:':1' }}</span></div>
-                                {% endif %}
+                                    <div class="product-card-placeholder small-placeholder" role="img" aria-label="Product image not yet available"><span aria-hidden="true">N</span></div>
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                             <div class="cart-item-body">
                                 <div class="cart-item-head">
@@ -31,15 +33,20 @@
                                         <h3>{{ product.name }}</h3>
                                         <p>{{ product.short_description|default:product.category.name }}</p>
                                     </div>
-                                    <strong>NPR {{ item.line_total }}</strong>
+                                    <strong>{{ site_currency }} {{ item.line_total|floatformat:2 }}</strong>
                                 </div>
+                                {% if not product.is_available or item.quantity > product.stock_quantity %}
+                                    <p class="cart-item-warning" role="status">
+                                        {% if not product.is_available %}This bag is currently unavailable.{% else %}Only {{ product.stock_quantity }} are available. Update the quantity before checkout.{% endif %}
+                                    </p>
+                                {% endif %}
 
                                 <div class="cart-item-actions">
                                     <form method="post" action="{% url 'cart:update_cart' product.pk %}" class="quantity-form">
                                         {% csrf_token %}
                                         <label for="quantity-{{ product.pk }}">Qty</label>
-                                        <input id="quantity-{{ product.pk }}" type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="{{ item.quantity }}">
-                                        <button class="button button-secondary" type="submit">Update</button>
+                                        <input id="quantity-{{ product.pk }}" type="number" name="quantity" min="1" max="{% if product.stock_quantity %}{{ product.stock_quantity }}{% else %}1{% endif %}" value="{{ item.quantity }}">
+                                        {% if product.is_available %}<button class="button button-secondary" type="submit">Update</button>{% endif %}
                                     </form>
 
                                     <form method="post" action="{% url 'cart:remove_from_cart' product.pk %}">
@@ -57,17 +64,22 @@
                 <h3>Order summary</h3>
                 <div class="summary-row">
                     <span>Subtotal</span>
-                    <span>NPR {{ subtotal }}</span>
+                    <span>{{ site_currency }} {{ subtotal|floatformat:2 }}</span>
                 </div>
                 <div class="summary-row">
-                    <span>Shipping</span>
-                    <span>NPR {{ shipping_fee }}</span>
+                    <span>Delivery fee</span>
+                    <span>{{ site_currency }} {{ shipping_fee|floatformat:2 }}</span>
                 </div>
                 <div class="summary-row total-row">
                     <span>Total</span>
-                    <strong>NPR {{ cart_total }}</strong>
+                    <strong>{{ site_currency }} {{ cart_total|floatformat:2 }}</strong>
                 </div>
-                <a href="{% url 'accounts:login' %}" class="button button-dark button-full">Proceed to checkout</a>
+                {% if unavailable_items %}
+                    <p class="cart-item-warning" role="status">Update or remove unavailable items to continue.</p>
+                    <a href="{% url 'orders:checkout' %}" class="button button-dark button-full">Review checkout</a>
+                {% else %}
+                    <a href="{% url 'orders:checkout' %}" class="button button-dark button-full">Proceed to checkout</a>
+                {% endif %}
             </aside>
         </div>
     {% else %}

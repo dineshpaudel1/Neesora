@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About Neesora | {{ site_name }}{% endblock %}
+{% block meta_description %}Learn about Neesora, a bag store based in {{ site_address }}.{% endblock %}
+
+{% block content %}
+<section class="page-width about-page">
+    <p class="eyebrow">About {{ site_name }}</p>
+    <div class="about-page-layout">
+        <div class="about-page-copy">
+            <h1>Bags for everyday life.</h1>
+            <p>{{ site_description }}</p>
+            <p>Neesora is based in {{ site_address }}. Browse the current collection online, or get in touch if you would like help with a product or order.</p>
+            <div class="about-page-actions">
+                <a class="button button-dark" href="{% url 'products:shop' %}">Explore all bags <span aria-hidden="true">→</span></a>
+                <a class="text-link" href="mailto:{{ site_email }}">Contact Neesora</a>
+            </div>
+        </div>
+        <div class="about-page-image">
+            <img src="{% static 'images/hero-bag.jpg' %}" alt="Bag from the Neesora collection" loading="lazy" decoding="async">
+        </div>
+    </div>
+</section>
+{% endblock %}

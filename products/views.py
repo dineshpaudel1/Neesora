@@ -1,13 +1,12 @@
-from decimal import Decimal, InvalidOperation
-
-from django.db.models import Q
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404, render
 
+from reviews.forms import ReviewForm
+from reviews.models import Review
 from .models import Category, Product
 
 
-def _apply_product_filters(request, queryset):
-    query = request.GET.get('q', '').strip()
+def _search_products(queryset, query):
     if query:
         queryset = queryset.filter(
             Q(name__icontains=query)
@@ -17,58 +16,25 @@ def _apply_product_filters(request, queryset):
             | Q(category__name__icontains=query)
         )
 
-    category_id = request.GET.get('category')
-    if category_id:
-        queryset = queryset.filter(category_id=category_id)
-
-    price_min = request.GET.get('price_min', '').strip()
-    price_max = request.GET.get('price_max', '').strip()
-
-    try:
-        if price_min:
-            queryset = queryset.filter(price__gte=Decimal(price_min))
-    except InvalidOperation:
-        pass
-
-    try:
-        if price_max:
-            queryset = queryset.filter(price__lte=Decimal(price_max))
-    except InvalidOperation:
-        pass
-
-    availability = request.GET.get('availability')
-    if availability == 'in_stock':
-        queryset = queryset.filter(stock_quantity__gt=0)
-    elif availability == 'out_of_stock':
-        queryset = queryset.filter(stock_quantity=0)
-
-    sort = request.GET.get('sort', 'latest')
-    if sort == 'price_low_high':
-        queryset = queryset.order_by('discount_price', 'price')
-    elif sort == 'price_high_low':
-        queryset = queryset.order_by('-discount_price', '-price')
-    elif sort == 'popularity':
-        queryset = queryset.order_by('-is_best_seller', '-featured', '-stock_quantity', '-created_at')
-    else:
-        queryset = queryset.order_by('-created_at')
-
-    return queryset
+    return queryset.order_by("-created_at", "pk")
 
 
 def shop(request):
-    categories = Category.objects.filter(is_active=True)
-    products = _apply_product_filters(request, Product.objects.filter(product_status=Product.STATUS_PUBLISHED).select_related('category'))
+    search_term = request.GET.get("q", "").strip()
+    products = list(
+        _search_products(
+            Product.objects.filter(product_status=Product.STATUS_PUBLISHED)
+            .select_related("category")
+            .prefetch_related("images"),
+            search_term,
+        )
+    )
     context = {
-        'page_title': 'Shop',
+        "page_title": "Shop",
         'products': products,
-        'categories': categories,
-        'site_page_type': 'shop',
-        'selected_category': request.GET.get('category', ''),
-        'search_term': request.GET.get('q', '').strip(),
-        'price_min': request.GET.get('price_min', ''),
-        'price_max': request.GET.get('price_max', ''),
-        'availability': request.GET.get('availability', ''),
-        'sort': request.GET.get('sort', 'latest'),
+        "product_count": len(products),
+        "site_page_type": "shop",
+        "search_term": search_term,
     }
     return render(request, 'products/shop.html', context)
 
@@ -79,44 +45,62 @@ def search_products(request):
 
 def category_products(request, category_slug):
     category = get_object_or_404(Category, slug=category_slug, is_active=True)
-    products = _apply_product_filters(
-        request,
-        Product.objects.filter(
-            category=category,
-            product_status=Product.STATUS_PUBLISHED,
-        ).select_related('category'),
+    search_term = request.GET.get("q", "").strip()
+    products = list(
+        _search_products(
+            Product.objects.filter(
+                category=category,
+                product_status=Product.STATUS_PUBLISHED,
+            )
+            .select_related("category")
+            .prefetch_related("images"),
+            search_term,
+        )
     )
-    categories = Category.objects.filter(is_active=True)
     context = {
         'page_title': category.name,
         'category': category,
         'products': products,
-        'categories': categories,
-        'site_page_type': 'category',
-        'selected_category': str(category.id),
-        'search_term': request.GET.get('q', '').strip(),
-        'price_min': request.GET.get('price_min', ''),
-        'price_max': request.GET.get('price_max', ''),
-        'availability': request.GET.get('availability', ''),
-        'sort': request.GET.get('sort', 'latest'),
+        "product_count": len(products),
+        "site_page_type": "category",
+        "search_term": search_term,
     }
     return render(request, 'products/category.html', context)
 
 
 def product_detail(request, slug):
     product = get_object_or_404(
-        Product,
+        Product.objects.prefetch_related("images"),
         slug=slug,
         product_status=Product.STATUS_PUBLISHED,
     )
+    reviews = (
+        Review.objects.filter(product=product, is_approved=True)
+        .select_related('user__customerprofile')
+        .order_by('-created_at')
+    )
+    rating_data = reviews.aggregate(avg=Avg('rating'))
+    avg_rating = rating_data['avg']
+    review_count = reviews.count()
+
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = reviews.filter(user=request.user).first()
+
     related_products = Product.objects.filter(
         category=product.category,
         product_status=Product.STATUS_PUBLISHED,
-    ).exclude(pk=product.pk).select_related('category')[:4]
+    ).exclude(pk=product.pk).select_related("category").prefetch_related("images")[:4]
+
     context = {
         'page_title': product.name,
         'product': product,
         'related_products': related_products,
         'site_page_type': 'product',
+        'reviews': reviews,
+        'review_count': review_count,
+        'avg_rating': avg_rating,
+        'user_review': user_review,
+        'review_form': ReviewForm(),
     }
     return render(request, 'products/product_detail.html', context)

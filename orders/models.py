@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from django.conf import settings
 from django.db import models
 from django.utils.crypto import get_random_string
@@ -37,13 +36,17 @@ class Order(models.Model):
         related_name='orders',
     )
     order_number = models.CharField(max_length=30, unique=True, db_index=True)
+    checkout_reference = models.UUIDField(unique=True, null=True, blank=True)
+    guest_access_token = models.CharField(max_length=64, blank=True)
     customer_name = models.CharField(max_length=120)
     phone_number = models.CharField(max_length=20)
-    email = models.EmailField()
+    email = models.EmailField(blank=True)
     address = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
+    district = models.CharField(max_length=100, blank=True)
+    ward_number = models.CharField(max_length=10, blank=True)
     province = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20)
+    postal_code = models.CharField(max_length=20, blank=True)
     order_notes = models.TextField(blank=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     shipping_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
@@ -52,6 +55,7 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=30, choices=PAYMENT_CHOICES, default=PAYMENT_CASH_ON_DELIVERY)
     payment_status = models.CharField(max_length=30, default='pending')
     order_status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    stock_deducted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -71,6 +75,24 @@ class Order(models.Model):
     @property
     def grand_total(self):
         return self.subtotal + self.shipping_fee - self.discount_amount
+
+
+class OrderStatusHistory(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status_history')
+    previous_status = models.CharField(max_length=30, blank=True)
+    new_status = models.CharField(max_length=30, choices=Order.STATUS_CHOICES)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='order_status_changes',
+    )
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'pk']
 
 
 class OrderItem(models.Model):

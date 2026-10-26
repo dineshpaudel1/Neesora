@@ -16,16 +16,30 @@ Including another URLconf
 """
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.conf.urls.static import static
 from django.urls import include, path
 
+from accounts.admin_views import dashboard as admin_dashboard
+from core.sitemaps import CategorySitemap, ProductSitemap, StorefrontSitemap
+
+sitemaps = {
+    "storefront": StorefrontSitemap,
+    "categories": CategorySitemap,
+    "products": ProductSitemap,
+}
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin_dashboard, name='admin_dashboard'),
+    path('django-admin/', admin.site.urls),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    path('myadmin/', include('accounts.admin_urls')),
     path('', include('core.urls')),
     path('', include('products.urls')),
     path('', include('accounts.urls')),
     path('', include('cart.urls')),
     path('', include('orders.urls')),
+    path('', include('reviews.urls')),
     path('accounts/', include('allauth.urls')),
 ]
 

@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">Catalog</p><h1>{{ page_title }}</h1><p>Category information appears in the storefront according to its active setting.</p></div></div>
+<form class="admin-editor-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}{% if form.non_field_errors %}<div class="admin-form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="admin-panel admin-form-section"><div class="admin-form-section-heading"><h2>Category details</h2><p>Choose a clear name and useful description.</p></div>
+        {% if category and category.image %}<img class="admin-current-image" src="{{ category.image.url }}" alt="{{ category.name }}">{% endif %}
+        <div class="admin-form-grid">{% for field in form %}<div class="admin-form-field {% if field.name == 'description' %}admin-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="admin-form-error" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}</div>
+    </section>
+    <div class="admin-form-actions"><a class="admin-secondary-button" href="{% url 'myadmin:categories' %}">Cancel</a><button class="admin-primary-button" type="submit">{% if is_create %}Create category{% else %}Save changes{% endif %}</button></div>
+</form>
+{% endblock %}

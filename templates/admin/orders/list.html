@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">Store activity</p><h1>Orders</h1><p>Search orders, review payment records, and follow fulfillment progress.</p></div></div>
+<section class="admin-panel">
+    <form class="admin-filter-bar admin-order-filters" method="get">
+        <label class="admin-search-field"><span class="sr-only">Search orders</span><input class="admin-input" type="search" name="q" value="{{ search_query }}" placeholder="Order number, customer, email…"></label>
+        <select class="admin-input" name="status" aria-label="Filter by order status"><option value="">All order statuses</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <select class="admin-input" name="payment_status" aria-label="Filter by payment status"><option value="">All payment statuses</option>{% for value,label in payment_status_choices %}<option value="{{ value }}" {% if selected_payment_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <select class="admin-input" name="payment_method" aria-label="Filter by payment method"><option value="">All payment methods</option>{% for value,label in payment_method_choices %}<option value="{{ value }}" {% if selected_payment_method == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <label class="admin-date-filter">From <input class="admin-input" type="date" name="date_from" value="{{ request.GET.date_from }}"></label>
+        <label class="admin-date-filter">To <input class="admin-input" type="date" name="date_to" value="{{ request.GET.date_to }}"></label>
+        <select class="admin-input" name="sort" aria-label="Sort orders"><option value="-created_at" {% if selected_sort == "-created_at" %}selected{% endif %}>Newest first</option><option value="created_at" {% if selected_sort == "created_at" %}selected{% endif %}>Oldest first</option><option value="-total_amount" {% if selected_sort == "-total_amount" %}selected{% endif %}>Highest total</option><option value="total_amount" {% if selected_sort == "total_amount" %}selected{% endif %}>Lowest total</option></select>
+        <button class="admin-secondary-button" type="submit">Apply</button>
+    </form>
+    {% if filter_form.errors %}<div class="admin-form-error" role="alert">Enter valid date filters.</div>{% endif %}
+    {% if orders %}
+        <div class="admin-table-scroll"><table class="admin-data-table">
+            <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Payment</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>{% for order in orders %}<tr>
+                <td><a class="admin-row-action" href="{% url 'myadmin:order_detail' order.pk %}">{{ order.order_number }}</a></td>
+                <td><strong>{{ order.customer_name }}</strong><small>{{ order.phone_number }}</small></td>
+                <td>{{ order.created_at|date:"M j, Y" }}</td>
+                <td><span class="admin-status">{{ order.payment_status|title }}</span><small class="admin-old-price">{{ order.get_payment_method_display }}</small></td>
+                <td><span class="order-status-chip">{{ order.get_order_status_display }}</span></td>
+                <td><strong>{{ site_currency }} {{ order.total_amount|floatformat:2 }}</strong></td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        {% include "admin/includes/pagination.html" %}
+    {% else %}
+        <div class="admin-empty-state"><span class="admin-empty-mark" aria-hidden="true">▣</span><h2>No orders found</h2><p>{% if search_query %}Try adjusting your search or filters.{% else %}Orders placed in the store will appear here.{% endif %}</p></div>
+    {% endif %}
+</section>
+{% endblock %}

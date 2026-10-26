@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">Catalog</p><h1>{{ page_title }}</h1><p>Product information is validated before it appears in the store.</p></div></div>
+<form class="admin-editor-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="admin-form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="admin-panel admin-form-section">
+        <div class="admin-form-section-heading"><h2>Product details</h2><p>Name, descriptions, and category.</p></div>
+        <div class="admin-form-grid">
+            {% for field in form %}
+                {% if field.name != "price" and field.name != "discount_price" and field.name != "stock_quantity" and field.name != "product_status" and field.name != "featured" and field.name != "is_new_arrival" and field.name != "is_best_seller" and field.name != "primary_image" and field.name != "image_alt_text" %}
+                    <div class="admin-form-field {% if field.name == 'description' %}admin-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="admin-form-error" role="alert">{{ field.errors }}</div>{% endif %}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    <section class="admin-panel admin-form-section">
+        <div class="admin-form-section-heading"><h2>Pricing &amp; inventory</h2><p>Set the current price and available stock.</p></div>
+        <div class="admin-form-grid admin-form-grid-three">
+            {% for field in form %}{% if field.name == "price" or field.name == "discount_price" or field.name == "stock_quantity" or field.name == "product_status" %}<div class="admin-form-field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="admin-form-error" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endif %}{% endfor %}
+        </div>
+    </section>
+    <section class="admin-panel admin-form-section">
+        <div class="admin-form-section-heading"><h2>Product images &amp; highlights</h2><p>Upload multiple storefront images, choose one main image, or remove images you no longer need.</p></div>
+        {{ image_formset.management_form }}
+        {% if image_formset.non_form_errors %}<div class="admin-form-error" role="alert">{{ image_formset.non_form_errors }}</div>{% endif %}
+        <div class="admin-product-image-forms">
+            {% for image_form in image_formset %}
+                <div class="admin-product-image-form">
+                    {% for hidden in image_form.hidden_fields %}{{ hidden }}{% endfor %}
+                    {% if image_form.instance.pk and image_form.instance.image %}
+                        <img class="admin-current-image" src="{{ image_form.instance.image.url }}" alt="{{ image_form.instance.alt_text|default:product.name }}">
+                    {% endif %}
+                    <div class="admin-form-grid">
+                        {% for field in image_form.visible_fields %}
+                            <div class="admin-form-field {% if field.name == 'DELETE' %}admin-image-delete-field{% endif %}">
+                                {{ field.label_tag }}{{ field }}
+                                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                                {% if field.errors %}<div class="admin-form-error" role="alert">{{ field.errors }}</div>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if image_form.non_field_errors %}<div class="admin-form-error" role="alert">{{ image_form.non_field_errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="admin-checkbox-row">{% for field in form %}{% if field.name == "featured" or field.name == "is_new_arrival" or field.name == "is_best_seller" %}<label class="admin-checkbox">{{ field }}<span>{{ field.label }}</span></label>{% if field.errors %}<div class="admin-form-error" role="alert">{{ field.errors }}</div>{% endif %}{% endif %}{% endfor %}</div>
+    </section>
+    <div class="admin-form-actions"><a class="admin-secondary-button" href="{% if product %}{% url 'myadmin:product_detail' product.pk %}{% else %}{% url 'myadmin:products' %}{% endif %}">Cancel</a><button class="admin-primary-button" type="submit">{% if is_create %}Create product{% else %}Save changes{% endif %}</button></div>
+</form>
+{% endblock %}

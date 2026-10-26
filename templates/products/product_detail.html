@@ -1,19 +1,87 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}{{ product.name }} | {{ site_name }}{% endblock %}
 {% block meta_description %}{{ product.short_description|default:product.description|striptags|truncatechars:160 }}{% endblock %}
+{% block extra_head %}
+    {% with product.images.all|first as product_image %}
+        {% if product_image %}
+            <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ product_image.image.url }}">
+        {% endif %}
+    {% endwith %}
+{% endblock %}
 
 {% block content %}
+{% with product.images.all|first as product_image %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ product.name|escapejs }}",
+  "description": "{{ product.short_description|default:product.description|striptags|truncatechars:500|escapejs }}",
+  "sku": "{{ product.sku|escapejs }}",
+  "category": "{{ product.category.name|escapejs }}",
+  {% if product.brand %}"brand": {"@type": "Brand", "name": "{{ product.brand|escapejs }}"},{% endif %}
+  {% if product_image %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ product_image.image.url|escapejs }}",{% endif %}
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{{ request.path|escapejs }}",
+    "priceCurrency": "{{ site_currency|escapejs }}",
+    "price": "{{ product.selling_price|floatformat:2 }}",
+    "availability": "https://schema.org/{% if product.is_available %}InStock{% else %}OutOfStock{% endif %}"
+  }{% if avg_rating %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ avg_rating|floatformat:1 }}",
+    "reviewCount": "{{ review_count }}"
+  }{% endif %}
+}
+</script>
+{% endwith %}
+
 <section class="page-width product-detail">
     <div class="product-gallery">
         {% with product.images.all as images %}
             {% if images %}
-                {% for image in images %}
-                    <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" class="product-main-image">
-                {% endfor %}
+                {% with images|first as primary_image %}
+                    <img
+                        src="{{ primary_image.image.url }}"
+                        alt="{{ primary_image.alt_text|default:product.name }}"
+                        class="product-main-image"
+                        data-product-gallery-main
+                        fetchpriority="high"
+                        decoding="async"
+                    >
+                {% endwith %}
+                {% if images|length > 1 %}
+                    <div class="product-gallery-thumbnails" role="group" aria-label="Product images">
+                        {% for image in images %}
+                            <button
+                                class="product-gallery-thumbnail"
+                                type="button"
+                                data-gallery-thumb
+                                data-image-src="{{ image.image.url }}"
+                                data-image-alt="{{ image.alt_text|default:product.name }}"
+                                aria-label="Show image {{ forloop.counter }} of {{ images|length }}: {{ image.alt_text|default:product.name }}"
+                                aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"
+                            >
+                                <img src="{{ image.image.url }}" alt="" loading="lazy" decoding="async">
+                            </button>
+                        {% endfor %}
+                    </div>
+                    <noscript>
+                        <div class="product-gallery-noscript">
+                            {% for image in images %}
+                                {% if not forloop.first %}
+                                    <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </noscript>
+                {% endif %}
             {% else %}
-                <img src="{% static 'images/pone.jpg' %}" alt="{{ product.name }}" class="product-main-image">
+                <div class="product-card-placeholder large-placeholder" role="img" aria-label="Product image not yet available">
+                    <span aria-hidden="true">N</span>
+                </div>
             {% endif %}
         {% endwith %}
     </div>
@@ -22,12 +90,24 @@
         <p class="eyebrow">{{ product.category.name }}</p>
         <h1>{{ product.name }}</h1>
 
+        {% if avg_rating %}
+        <div class="product-rating-inline">
+            <div class="stars-display" aria-label="Rated {{ avg_rating|floatformat:1 }} out of 5">
+                {% for i in "12345" %}
+                    <span class="star {% if forloop.counter <= avg_rating %}star-filled{% endif %}" aria-hidden="true">★</span>
+                {% endfor %}
+            </div>
+            <a href="#reviews" class="rating-link">{{ avg_rating|floatformat:1 }} · {{ review_count }} review{{ review_count|pluralize }}</a>
+        </div>
+        {% endif %}
+
         <div class="product-price-block">
-            {% if product.discount_price %}
-                <span class="product-price current-price">NPR {{ product.discount_price }}</span>
-                <span class="product-price original-price">NPR {{ product.price }}</span>
+            {% if product.discount_price is not None %}
+                <span class="product-price current-price">{{ site_currency }} {{ product.discount_price|floatformat:2 }}</span>
+                <span class="product-price original-price">{{ site_currency }} {{ product.price|floatformat:2 }}</span>
+                <span class="discount-badge">-{{ product.discount_percentage|floatformat:0 }}%</span>
             {% else %}
-                <span class="product-price current-price">NPR {{ product.price }}</span>
+                <span class="product-price current-price">{{ site_currency }} {{ product.price|floatformat:2 }}</span>
             {% endif %}
         </div>
 
@@ -42,14 +122,15 @@
             <span>SKU: {{ product.sku }}</span>
         </div>
 
-        {% if product.has_stock %}
+        {% if product.is_available %}
             <form method="post" action="{% url 'cart:add_to_cart' product.pk %}" class="product-detail-actions">
                 {% csrf_token %}
                 <label class="quantity-picker">
                     <span>Quantity</span>
                     <input type="number" name="quantity" min="1" max="{{ product.stock_quantity }}" value="1">
                 </label>
-                <button class="button button-dark" type="submit">Add to bag</button>
+                <button class="button button-dark" type="submit" name="next" value="{% url 'products:product_detail' product.slug %}">Add to bag</button>
+                <button class="button button-secondary" type="submit" name="next" value="{% url 'orders:checkout' %}">Buy now</button>
             </form>
         {% else %}
             <div class="product-detail-actions">
@@ -59,8 +140,18 @@
 
         <form method="post" action="{% url 'cart:add_to_wishlist' product.pk %}" class="wishlist-button-form">
             {% csrf_token %}
-            <button class="button button-secondary" type="submit">Add to wishlist</button>
+            <button class="button button-secondary wishlist-btn" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10a4.5 4.5 0 0 1 8.8-1.4 4.5 4.5 0 0 1 8.8 1.4Z"/></svg>
+                Add to wishlist
+            </button>
         </form>
+
+        {% if product.is_best_seller or product.is_new_arrival %}
+        <div class="product-badges-detail">
+            {% if product.is_best_seller %}<span class="badge badge-bestseller">Best Seller</span>{% endif %}
+            {% if product.is_new_arrival %}<span class="badge badge-new">New Arrival</span>{% endif %}
+        </div>
+        {% endif %}
     </div>
 </section>
 
@@ -74,10 +165,164 @@
     </div>
     <div class="product-grid">
         {% for related in related_products %}
-            {% cycle 'images/pone.jpg' 'images/ptwo.jpg' 'images/pthree.jpg' 'images/pfour.jpg' as product_fallback silent %}
-            {% include "includes/product_card.html" with product=related fallback_image=product_fallback %}
+            {% include "includes/product_card.html" with product=related %}
         {% endfor %}
     </div>
 </section>
 {% endif %}
+
+<!-- Reviews Section -->
+<section class="page-width reviews-section" id="reviews">
+    <div class="reviews-header">
+        <div>
+            <p class="eyebrow">Customer feedback</p>
+            <h2>Reviews</h2>
+        </div>
+        {% if avg_rating %}
+        <div class="reviews-summary-block">
+            <span class="avg-rating-big">{{ avg_rating|floatformat:1 }}</span>
+            <div>
+                <div class="stars-display stars-lg" aria-label="Average rating {{ avg_rating|floatformat:1 }} out of 5">
+                    {% for i in "12345" %}
+                        <span class="star {% if forloop.counter <= avg_rating %}star-filled{% endif %}" aria-hidden="true">★</span>
+                    {% endfor %}
+                </div>
+                <p class="reviews-count-label">Based on {{ review_count }} review{{ review_count|pluralize }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="reviews-layout">
+        <div class="reviews-list">
+            {% if reviews %}
+                {% for review in reviews %}
+                <article class="review-card">
+                    <div class="review-card-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar" aria-hidden="true">{{ review.user.username|first|upper }}</div>
+                            <div>
+                                <strong class="reviewer-name">
+                                    {% if review.user.customerprofile.display_name %}
+                                        {{ review.user.customerprofile.display_name }}
+                                    {% else %}
+                                        {{ review.user.username }}
+                                    {% endif %}
+                                </strong>
+                                <time class="review-date" datetime="{{ review.created_at|date:'Y-m-d' }}">{{ review.created_at|date:"N j, Y" }}</time>
+                            </div>
+                        </div>
+                        <div class="stars-display" aria-label="Rated {{ review.rating }} out of 5">
+                            {% for i in "12345" %}
+                                <span class="star {% if forloop.counter <= review.rating %}star-filled{% endif %}" aria-hidden="true">★</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if review.title %}<h4 class="review-title">{{ review.title }}</h4>{% endif %}
+                    <p class="review-body">{{ review.body }}</p>
+                    {% if review.user == request.user %}
+                        <span class="review-own-label">Your review</span>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="reviews-empty">
+                    <p>No reviews yet. Be the first to share your experience with this product.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <aside class="review-form-aside">
+            <div class="review-form-card">
+                {% if request.user.is_authenticated %}
+                    <h3>{% if user_review %}Edit your review{% else %}Write a review{% endif %}</h3>
+                    <form method="post" action="{% url 'reviews:submit' product.pk %}" class="review-form" novalidate>
+                        {% csrf_token %}
+                        {{ review_form.rating }}
+                        <div class="star-picker-wrap">
+                            <label class="review-field-label">Your rating <span class="review-required">*</span></label>
+                            <div class="star-picker" data-star-picker role="radiogroup" aria-label="Rate this product">
+                                {% for i in "54321" %}
+                                <button
+                                    type="button"
+                                    class="star-pick-btn"
+                                    data-value="{{ i }}"
+                                    aria-label="{{ i }} star{% if i != '1' %}s{% endif %}"
+                                >★</button>
+                                {% endfor %}
+                            </div>
+                            <p class="star-picker-hint" data-star-label>Select a rating</p>
+                        </div>
+
+                        <div class="review-field">
+                            <label class="review-field-label" for="id_title">{{ review_form.title.label }}</label>
+                            {{ review_form.title }}
+                        </div>
+
+                        <div class="review-field">
+                            <label class="review-field-label" for="id_body">{{ review_form.body.label }} <span class="review-required">*</span></label>
+                            {{ review_form.body }}
+                        </div>
+
+                        <button class="button button-dark review-submit-btn" type="submit">
+                            {% if user_review %}Update review{% else %}Submit review{% endif %}
+                        </button>
+                    </form>
+
+                    {% if user_review %}
+                    <form method="post" action="{% url 'reviews:delete' user_review.pk %}" class="review-delete-form">
+                        {% csrf_token %}
+                        <button type="submit" class="text-button review-delete-btn">Remove my review</button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                    <div class="review-login-prompt">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+                        <p>Sign in to leave a review for this product.</p>
+                        <a class="button button-dark" href="{% url 'accounts:login' %}?next={{ request.path }}#reviews">Sign in to review</a>
+                    </div>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelectorAll('[data-star-picker]').forEach(function(picker) {
+    var form = picker.closest('form');
+    var ratingInput = form ? form.querySelector('input[name="rating"]') : null;
+    var label = picker.parentElement.querySelector('[data-star-label]');
+    var labels = ['Terrible', 'Poor', 'Okay', 'Good', 'Excellent'];
+    var buttons = Array.from(picker.querySelectorAll('.star-pick-btn'));
+
+    {% if user_review %}
+    var existingRating = {{ user_review.rating }};
+    if (ratingInput) ratingInput.value = existingRating;
+    if (label) label.textContent = labels[existingRating - 1];
+    buttons.forEach(function(btn) {
+        var val = parseInt(btn.dataset.value);
+        btn.classList.toggle('active', val <= existingRating);
+    });
+    {% endif %}
+
+    buttons.forEach(function(btn) {
+        btn.addEventListener('mouseenter', function() {
+            var val = parseInt(btn.dataset.value);
+            buttons.forEach(function(b) { b.classList.toggle('hover', parseInt(b.dataset.value) <= val); });
+        });
+        btn.addEventListener('mouseleave', function() {
+            buttons.forEach(function(b) { b.classList.remove('hover'); });
+        });
+        btn.addEventListener('click', function() {
+            var val = parseInt(btn.dataset.value);
+            if (ratingInput) ratingInput.value = val;
+            if (label) label.textContent = labels[val - 1];
+            buttons.forEach(function(b) { b.classList.toggle('active', parseInt(b.dataset.value) <= val); });
+        });
+    });
+});
+</script>
 {% endblock %}

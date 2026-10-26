@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin sign in | {{ site_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'css/product-management.css' %}">
+</head>
+<body class="management-page admin-login-page">
+    <main class="admin-login-card">
+        <a class="management-brand" href="{% url 'core:home' %}">{{ site_name|lower }}</a>
+        <p class="eyebrow">Store administration</p>
+        <h1>Sign in</h1>
+        <p class="admin-login-intro">Sign in with the authorized Neesora administrator account.</p>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="form-errors admin-login-error" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in form %}
+                <div class="form-field">
+                    {{ field.label_tag }}
+                    {% if field.name == "password" %}
+                        <span class="password-input-wrap">
+                            {{ field }}
+                            <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" data-password-toggle="{{ field.id_for_label }}">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </span>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% if field.errors %}<div class="form-errors" role="alert">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <button class="button button-dark admin-login-submit" type="submit">Sign in</button>
+        </form>
+    </main>
+    <script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

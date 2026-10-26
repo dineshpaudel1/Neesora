@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading">
+    <div><p class="eyebrow">Catalog</p><h1>Products</h1><p>Manage products, pricing, stock, and storefront visibility.</p></div>
+    <a class="admin-primary-button" href="{% url 'myadmin:product_add' %}"><span aria-hidden="true">+</span> Add product</a>
+</div>
+<section class="admin-panel">
+    <form class="admin-filter-bar" method="get">
+        <label class="admin-search-field"><span class="sr-only">Search products</span><input class="admin-input" type="search" name="q" value="{{ search_query }}" placeholder="Search name, SKU, category…"></label>
+        <select class="admin-input" name="category" aria-label="Filter by category">
+            <option value="">All categories</option>
+            {% for category in categories %}<option value="{{ category.pk }}" {% if selected_category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>{% endfor %}
+        </select>
+        <select class="admin-input" name="status" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <select class="admin-input" name="stock" aria-label="Filter by stock">
+            <option value="">Any stock</option><option value="in_stock" {% if selected_stock == "in_stock" %}selected{% endif %}>In stock</option><option value="low_stock" {% if selected_stock == "low_stock" %}selected{% endif %}>Low stock (1–5)</option><option value="out_of_stock" {% if selected_stock == "out_of_stock" %}selected{% endif %}>Out of stock</option>
+        </select>
+        <select class="admin-input" name="sort" aria-label="Sort products">
+            <option value="-created_at" {% if selected_sort == "-created_at" %}selected{% endif %}>Newest first</option><option value="name" {% if selected_sort == "name" %}selected{% endif %}>Name A–Z</option><option value="-name" {% if selected_sort == "-name" %}selected{% endif %}>Name Z–A</option><option value="price" {% if selected_sort == "price" %}selected{% endif %}>Price low–high</option><option value="-price" {% if selected_sort == "-price" %}selected{% endif %}>Price high–low</option><option value="stock" {% if selected_sort == "stock" %}selected{% endif %}>Stock low–high</option><option value="-stock" {% if selected_sort == "-stock" %}selected{% endif %}>Stock high–low</option>
+        </select>
+        <button class="admin-secondary-button" type="submit">Apply</button>
+    </form>
+    {% if products %}
+        <div class="admin-table-scroll">
+            <table class="admin-data-table">
+                <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Added</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td><a class="admin-product-cell" href="{% url 'myadmin:product_detail' product.pk %}">
+                            {% with image=product.images.all|first %}{% if image %}<img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">{% else %}<span class="admin-product-placeholder" aria-hidden="true">N</span>{% endif %}{% endwith %}
+                            <span><strong>{{ product.name }}</strong><small>SKU {{ product.sku }}</small></span>
+                        </a></td>
+                        <td>{{ product.category.name }}</td>
+                        <td><strong>{{ site_currency }} {{ product.selling_price|floatformat:2 }}</strong>{% if product.discount_price %}<small class="admin-old-price">{{ site_currency }} {{ product.price|floatformat:2 }}</small>{% endif %}</td>
+                        <td><span class="{% if product.stock_quantity == 0 %}stock-state stock-state-empty{% elif product.stock_quantity <= 5 %}stock-state stock-state-low{% else %}stock-state{% endif %}">{{ product.stock_quantity }}</span></td>
+                        <td><span class="admin-status admin-status-{{ product.product_status }}">{{ product.get_product_status_display }}</span></td>
+                        <td>{{ product.created_at|date:"M j, Y" }}</td>
+                        <td><a class="admin-row-action" href="{% url 'myadmin:product_edit' product.pk %}">Edit</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "admin/includes/pagination.html" %}
+    {% else %}
+        <div class="admin-empty-state"><span class="admin-empty-mark" aria-hidden="true">▧</span><h2>No products found</h2><p>{% if search_query %}Try a different search or clear the filters.{% else %}Add your first product to start building the catalog.{% endif %}</p><a class="admin-primary-button" href="{% url 'myadmin:product_add' %}">Add product</a></div>
+    {% endif %}
+</section>
+{% endblock %}

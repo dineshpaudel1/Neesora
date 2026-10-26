@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">People</p><h1>Customers</h1><p>View customer accounts and their order counts. Passwords and authentication data are never shown.</p></div></div>
+<section class="admin-panel">
+    <form class="admin-filter-bar admin-filter-bar-search" method="get">
+        <label class="admin-search-field"><span class="sr-only">Search customers</span><input class="admin-input" type="search" name="q" value="{{ search_query }}" placeholder="Name, email, phone…"></label>
+        <select class="admin-input" name="status" aria-label="Filter by account status"><option value="">All accounts</option><option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option><option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Inactive</option></select>
+        <button class="admin-secondary-button" type="submit">Apply</button>
+    </form>
+    {% if customers %}
+        <div class="admin-table-scroll"><table class="admin-data-table">
+            <thead><tr><th>Customer</th><th>Contact</th><th>Orders</th><th>Account</th><th>Joined</th></tr></thead>
+            <tbody>{% for customer in customers %}<tr>
+                <td><a class="admin-customer-cell" href="{% url 'myadmin:customer_detail' customer.pk %}"><span class="admin-avatar" aria-hidden="true">{{ customer.username|slice:":1"|upper }}</span><span><strong>{% if customer.customer_profile.full_name %}{{ customer.customer_profile.full_name }}{% else %}{{ customer.get_full_name|default:customer.username }}{% endif %}</strong><small>{{ customer.username }}</small></span></a></td>
+                <td>{{ customer.email|default:"—" }}{% if customer.customer_profile.phone_number %}<small class="admin-old-price">{{ customer.customer_profile.phone_number }}</small>{% endif %}</td>
+                <td>{{ customer.order_count }}</td>
+                <td><span class="admin-status {% if customer.is_active %}admin-status-published{% else %}admin-status-archived{% endif %}">{% if customer.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                <td>{{ customer.date_joined|date:"M j, Y" }}</td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        {% include "admin/includes/pagination.html" %}
+    {% else %}
+        <div class="admin-empty-state"><span class="admin-empty-mark" aria-hidden="true">♙</span><h2>No customers found</h2><p>{% if search_query %}Try a different search term.{% else %}Customer accounts will appear here after registration.{% endif %}</p></div>
+    {% endif %}
+</section>
+{% endblock %}

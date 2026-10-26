@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ page_title }} | {{ site_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'css/product-management.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="management-page admin-shell">
+    <div class="admin-layout">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <a class="admin-sidebar-brand" href="{% url 'admin_dashboard' %}">
+                <img src="{% static 'images/websitelogo.png' %}" alt="">
+                <span>{{ site_name|lower }}<small>STORE MANAGEMENT</small></span>
+            </a>
+            <nav class="admin-sidebar-nav" aria-label="Admin navigation">
+                <span class="admin-nav-label">Workspace</span>
+                <a class="admin-nav-link {% if active_section == 'dashboard' %}is-active{% endif %}" href="{% url 'admin_dashboard' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="5" rx="1"></rect><rect x="13" y="10" width="8" height="11" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect></svg></span> Overview</a>
+                <a class="admin-nav-link {% if active_section == 'products' %}is-active{% endif %}" href="{% url 'myadmin:products' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l1 13H4L5 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path></svg></span> Products</a>
+                <a class="admin-nav-link {% if active_section == 'products' and request.GET.stock %}is-active{% endif %}" href="{% url 'myadmin:products' %}?stock=low_stock"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"></path><path d="M12 9v5M12 17h.01"></path></svg></span> Inventory</a>
+                <a class="admin-nav-link {% if active_section == 'categories' %}is-active{% endif %}" href="{% url 'myadmin:categories' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="5" rx="1"></rect><rect x="4" y="11" width="16" height="5" rx="1"></rect><rect x="4" y="18" width="16" height="2" rx="1"></rect></svg></span> Categories</a>
+                <a class="admin-nav-link {% if active_section == 'orders' %}is-active{% endif %}" href="{% url 'myadmin:orders' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21V3Z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></span> Orders</a>
+                <a class="admin-nav-link {% if active_section == 'customers' %}is-active{% endif %}" href="{% url 'myadmin:customers' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"></path></svg></span> Customers</a>
+                <span class="admin-nav-label admin-nav-label-spaced">Account</span>
+                <a class="admin-nav-link" href="{% url 'myadmin:password_change' %}"><span class="admin-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path></svg></span> Password &amp; security</a>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <a href="{% url 'products:shop' %}">← View storefront</a>
+                <form action="{% url 'myadmin:logout' %}" method="post">{% csrf_token %}<button type="submit">Log out</button></form>
+            </div>
+        </aside>
+        <div class="admin-main-column">
+            <header class="admin-topbar">
+                <button class="admin-sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="admin-sidebar"><span></span><span></span><span></span></button>
+                <div class="admin-breadcrumb"><span>Store</span><span aria-hidden="true">/</span><strong>{{ page_title }}</strong></div>
+                <div class="admin-topbar-profile"><span class="admin-avatar" aria-hidden="true">{{ request.user.username|slice:":1"|upper }}</span><span>{{ request.user.get_full_name|default:request.user.username }}</span></div>
+            </header>
+            <main class="admin-content">
+                {% include "includes/messages.html" %}
+                {% block admin_content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="{% static 'js/admin-ui.js' %}" defer></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

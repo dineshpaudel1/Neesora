@@ -5,10 +5,13 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
+
+from cart.services import merge_session_cart
 
 from .models import CustomerProfile
 
@@ -64,16 +67,30 @@ class RegistrationForm(forms.Form):
 
 
 class EmailAuthenticationForm(AuthenticationForm):
-    username = forms.EmailField(label="Email")
+    username = forms.CharField(label="Username or email")
 
     def clean(self):
-        email = self.cleaned_data.get("username")
+        identifier = self.cleaned_data.get("username")
         password = self.cleaned_data.get("password")
-        if email and password:
-            user = User.objects.filter(email__iexact=email).first()
+        if identifier and password:
+            user = User.objects.filter(email__iexact=identifier).first()
             if user is not None:
                 self.cleaned_data["username"] = user.get_username()
         return super().clean()
+
+
+class StorefrontLoginView(LoginView):
+    template_name = "accounts/login.html"
+    authentication_form = EmailAuthenticationForm
+    next_page = "accounts:account"
+    extra_context = {"site_name": "Neesora"}
+
+    def form_valid(self, form):
+        session_key = self.request.session.session_key
+        user = form.get_user()
+        response = super().form_valid(form)
+        merge_session_cart(user, session_key)
+        return response
 
 
 def register(request):
@@ -82,12 +99,14 @@ def register(request):
 
     form = RegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        session_key = request.session.session_key
         user = form.save()
         login(
             request,
             user,
             backend="django.contrib.auth.backends.ModelBackend",
         )
+        merge_session_cart(user, session_key)
         messages.success(
             request,
             "Your Neesora account has been created successfully.",

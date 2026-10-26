@@ -52,13 +52,16 @@
         </div>
 
         <div class="footer-column">
-            <h2>Quick links</h2>
-            <a href="{% url 'core:home' %}">Home</a>
-            <a href="{% url 'products:shop' %}">Shop</a>
-            <a href="{% url 'core:home' %}#about">About</a>
+            <h2>Explore</h2>
+            <a href="{% url 'products:shop' %}">All bags</a>
+            <a href="{% url 'core:home' %}#new-arrivals">New arrivals</a>
+            <a href="{% url 'core:about' %}">About Neesora</a>
             <a href="{% url 'core:home' %}#contact">Contact</a>
-            <a href="{% url 'core:privacy' %}">Privacy policy</a>
-            <a href="{% url 'core:terms' %}">Terms &amp; conditions</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'orders:orders' %}">My orders</a>
+            {% else %}
+                <a href="{% url 'accounts:login' %}">My account</a>
+            {% endif %}
         </div>
 
         <div class="footer-column">
@@ -80,7 +83,6 @@
     <div class="footer-bottom">
         <div class="page-width footer-bottom-inner">
             <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
-            <p>Made with care in Lalitpur, Nepal.</p>
         </div>
     </div>
 </footer>

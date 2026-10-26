@@ -3,7 +3,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from django.core.exceptions import ImproperlyConfigured
-from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,10 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() in {"1", "true", "yes"}
 
 if not SECRET_KEY:
-    if DEBUG:
-        SECRET_KEY = get_random_secret_key()
-    else:
-        raise ImproperlyConfigured("Set SECRET_KEY in the environment or .env file.")
+    raise ImproperlyConfigured("Set SECRET_KEY in the environment or .env file.")
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -31,13 +27,15 @@ CSRF_TRUSTED_ORIGINS = [
 
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'config.apps.NeesoraAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django.contrib.sitemaps',
+    'axes',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -59,6 +57,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -77,6 +76,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.site_information',
+                'cart.context_processors.cart_information',
             ],
         },
     },
@@ -147,6 +147,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
@@ -161,11 +164,19 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/account/'
 LOGOUT_REDIRECT_URL = '/'
 SITE_ID = 1
+NEESORA_ADMIN_USERNAME = os.getenv("NEESORA_ADMIN_USERNAME", "").strip()
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_RESET_ON_SUCCESS = True
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL = True

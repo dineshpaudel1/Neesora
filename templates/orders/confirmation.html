@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Order confirmed | {{ site_name }}{% endblock %}
+{% block extra_head %}<meta name="referrer" content="no-referrer">{% endblock %}
+
+{% block content %}
+<section class="page-width order-confirmation">
+    <header class="confirmation-heading">
+        <div class="invoice-store"><strong>{{ site_name }}</strong><span>{{ site_address }}</span><span>{{ site_phone }} · {{ site_email }}</span></div>
+        <span class="confirmation-check" aria-hidden="true">✓</span>
+        <p class="eyebrow">Thank you for choosing Neesora</p>
+        <h1>Your order is confirmed</h1>
+        <p>We’ve received your order. Payment is due in cash when it is delivered.</p>
+        <strong class="confirmation-reference">{{ order.order_number }}</strong>
+    </header>
+    <div class="order-layout confirmation-layout">
+        <section class="content-card confirmation-items">
+            <div class="confirmation-section-title"><div><p class="eyebrow">Order details</p><h2>Items in your order</h2></div><span>{{ order.created_at|date:"M j, Y · g:i A" }}</span></div>
+            {% for item in order.items.all %}
+                <div class="order-item-row"><div><strong>{{ item.product_name }}</strong><p>Quantity: {{ item.quantity }} · {{ site_currency }} {{ item.unit_price|floatformat:2 }} each</p></div><span>{{ site_currency }} {{ item.line_total|floatformat:2 }}</span></div>
+            {% endfor %}
+            <dl class="confirmation-totals">
+                <div><dt>Subtotal</dt><dd>{{ site_currency }} {{ order.subtotal|floatformat:2 }}</dd></div>
+                <div><dt>Delivery fee</dt><dd>{{ site_currency }} {{ order.shipping_fee|floatformat:2 }}</dd></div>
+                <div><dt>Discount</dt><dd>− {{ site_currency }} {{ order.discount_amount|floatformat:2 }}</dd></div>
+                <div class="confirmation-total"><dt>Total due on delivery</dt><dd>{{ site_currency }} {{ order.total_amount|floatformat:2 }}</dd></div>
+            </dl>
+        </section>
+        <aside class="confirmation-aside">
+            <section class="content-card confirmation-info"><p class="eyebrow">Delivery</p><h2>{{ order.customer_name }}</h2><p>{{ order.phone_number }}{% if order.email %}<br>{{ order.email }}{% endif %}</p><p>{{ order.address }}<br>Ward {{ order.ward_number }}, {{ order.city }}<br>{{ order.district }}, {{ order.province }}{% if order.postal_code %} {{ order.postal_code }}{% endif %}</p></section>
+            <section class="content-card confirmation-info"><p class="eyebrow">Order status</p><p><strong>{{ order.get_order_status_display }}</strong></p><p>Payment: {{ order.get_payment_method_display }} · {{ order.payment_status|title }}</p>
+                {% if order.user_id and request.user.is_authenticated %}<a class="text-link" href="{% url 'orders:order_detail' order.order_number %}">Track this order <span aria-hidden="true">→</span></a>{% endif %}
+            </section>
+        </aside>
+    </div>
+    <div class="confirmation-actions"><a class="button button-dark" href="{% url 'products:shop' %}">Continue shopping</a>{% if order.user_id and request.user.is_authenticated %}<a class="button button-secondary" href="{% url 'orders:orders' %}">View my orders</a>{% endif %}<button class="button button-secondary" type="button" data-print-invoice>Print receipt</button></div>
+</section>
+{% endblock %}

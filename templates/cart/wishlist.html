@@ -18,15 +18,17 @@
                 {% with product=item.product %}
                     <article class="wishlist-card">
                         <div class="wishlist-card-image">
-                            {% if product.images.first %}
-                                <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
-                            {% else %}
-                                <div class="product-card-placeholder medium-placeholder"><span>{{ product.name|slice:':1' }}</span></div>
-                            {% endif %}
+                            {% with product.images.all|first as primary_image %}
+                                {% if primary_image %}
+                                    <img src="{{ primary_image.image.url }}" alt="{{ primary_image.alt_text|default:product.name }}" loading="lazy" decoding="async">
+                                {% else %}
+                                    <div class="product-card-placeholder medium-placeholder" role="img" aria-label="Product image not yet available"><span aria-hidden="true">N</span></div>
+                                {% endif %}
+                            {% endwith %}
                         </div>
                         <div class="wishlist-card-body">
                             <h3>{{ product.name }}</h3>
-                            <p>NPR {{ product.selling_price }}</p>
+                            <p>{{ site_currency }} {{ product.selling_price|floatformat:2 }}</p>
                             <div class="wishlist-actions">
                                 <a href="{% url 'products:product_detail' product.slug %}" class="button button-dark">View item</a>
                                 <form method="post" action="{% url 'cart:remove_from_wishlist' product.pk %}">

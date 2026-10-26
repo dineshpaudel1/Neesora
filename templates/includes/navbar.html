@@ -7,10 +7,25 @@
             <span class="brand-name">{{ site_name|lower }}</span>
         </a>
 
+        <div class="primary-menu-wrap" id="primary-menu">
+            <div class="primary-menu">
+                <a href="{% url 'core:home' %}" {% if request.path == '/' %}aria-current="page"{% endif %}>Home</a>
+                <a href="{% url 'products:shop' %}" {% if request.path == '/shop/' or site_page_type == 'category' or site_page_type == 'product' %}aria-current="page"{% endif %}>All bags</a>
+                <a href="{% url 'core:home' %}#new-arrivals">New arrivals</a>
+                <a href="{% url 'core:home' %}#popular-bags">Popular picks</a>
+                <a href="{% url 'core:about' %}" {% if site_page_type == 'about' %}aria-current="page"{% endif %}>About</a>
+                <a href="{% url 'core:home' %}#contact">Contact</a>
+                <a class="primary-menu-account" href="{% if request.user.is_authenticated %}{% url 'orders:orders' %}{% else %}{% url 'accounts:login' %}{% endif %}">
+                    {% if request.user.is_authenticated %}My orders{% else %}Sign in{% endif %}
+                </a>
+                <a class="primary-menu-wishlist" href="{% url 'cart:wishlist' %}">Wishlist</a>
+            </div>
+        </div>
+
         <div class="navigation-actions">
             <form class="navigation-search" action="{% url 'products:search' %}" method="get" role="search">
                 <label class="sr-only" for="site-search">Search bags</label>
-                <input id="site-search" type="search" name="q" placeholder="Search bags">
+                <input id="site-search" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search bags">
                 <button type="submit" aria-label="Search">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="10.8" cy="10.8" r="6.8"></circle>
@@ -19,38 +34,43 @@
                 </button>
             </form>
 
-            <a class="header-action" href="{% url 'cart:wishlist' %}" aria-label="Wishlist">
+            <a class="header-action header-action-wishlist" href="{% url 'cart:wishlist' %}" aria-label="Wishlist">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10a4.5 4.5 0 0 1 8.8-1.4 4.5 4.5 0 0 1 8.8 1.4Z"></path>
                 </svg>
                 <span>Wishlist</span>
             </a>
 
-            <a class="header-action" href="{% url 'cart:cart' %}" aria-label="Shopping bag">
+            <a class="header-action header-action-bag" href="{% url 'cart:cart' %}" aria-label="Shopping bag, {{ cart_item_count }} items">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 8h14l1 13H4L5 8Z"></path>
                     <path d="M9 9V6a3 3 0 0 1 6 0v3"></path>
                 </svg>
                 <span>Bag</span>
+                {% if cart_item_count %}<span class="cart-count" aria-hidden="true">{{ cart_item_count }}</span>{% endif %}
             </a>
 
             {% if request.user.is_authenticated %}
                 <a class="header-action account-icon-link" href="{% url 'accounts:account' %}" aria-label="My account">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="8" r="3.5"></circle>
-                        <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"></path>
-                    </svg>
-                    <span class="sr-only">My account</span>
-                </a>
             {% else %}
                 <a class="header-action account-icon-link" href="{% url 'accounts:login' %}" aria-label="Account / Login">
+            {% endif %}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="3.5"></circle>
                         <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"></path>
                     </svg>
-                    <span>Account / Login</span>
+                    <span class="sr-only">Account</span>
                 </a>
-            {% endif %}
+
+            <button
+                class="menu-toggle"
+                type="button"
+                aria-controls="primary-menu"
+                aria-expanded="false"
+                aria-label="Open navigation menu"
+            >
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </nav>
 </header>

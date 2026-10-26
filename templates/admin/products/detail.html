@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading">
+    <div><p class="eyebrow">Product / Details</p><h1>{{ product.name }}</h1><p>SKU {{ product.sku }} · Added {{ product.created_at|date:"M j, Y" }}</p></div>
+    <div class="admin-heading-actions"><a class="admin-secondary-button" href="{% url 'myadmin:products' %}">Back to products</a><a class="admin-primary-button" href="{% url 'myadmin:product_edit' product.pk %}">Edit product</a></div>
+</div>
+<section class="admin-detail-grid">
+    <article class="admin-panel admin-product-preview">
+        {% with image=product.images.all|first %}{% if image %}<img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}">{% else %}<div class="admin-large-placeholder">No product image</div>{% endif %}{% endwith %}
+        <div><span class="admin-status admin-status-{{ product.product_status }}">{{ product.get_product_status_display }}</span><span class="{% if product.stock_quantity == 0 %}stock-state stock-state-empty{% elif product.stock_quantity <= 5 %}stock-state stock-state-low{% else %}stock-state{% endif %}">{{ product.stock_quantity }} in stock</span></div>
+    </article>
+    <article class="admin-panel admin-product-information">
+        <p class="eyebrow">Product information</p>
+        <dl class="admin-detail-list">
+            <div><dt>Category</dt><dd>{{ product.category.name }}</dd></div><div><dt>Brand</dt><dd>{{ product.brand|default:"—" }}</dd></div>
+            <div><dt>Price</dt><dd>{{ site_currency }} {{ product.selling_price|floatformat:2 }}{% if product.discount_price %} <del>{{ site_currency }} {{ product.price|floatformat:2 }}</del>{% endif %}</dd></div>
+            <div><dt>Featured</dt><dd>{{ product.featured|yesno:"Yes,No" }}</dd></div><div><dt>New arrival</dt><dd>{{ product.is_new_arrival|yesno:"Yes,No" }}</dd></div><div><dt>Best seller</dt><dd>{{ product.is_best_seller|yesno:"Yes,No" }}</dd></div>
+        </dl>
+        <h2>Description</h2><p>{{ product.description|linebreaksbr }}</p>
+        {% if product.short_description %}<h2>Short description</h2><p>{{ product.short_description }}</p>{% endif %}
+        <a class="admin-danger-link" href="{% url 'myadmin:product_delete' product.pk %}">Delete product</a>
+    </article>
+</section>
+{% endblock %}

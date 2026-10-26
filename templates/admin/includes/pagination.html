@@ -1,0 +1,9 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="admin-pagination" aria-label="Pagination">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div>
+        {% if page_obj.has_previous %}<a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&amp;{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&amp;{% endif %}{% if request.GET.status %}status={{ request.GET.status|urlencode }}&amp;{% endif %}{% if request.GET.stock %}stock={{ request.GET.stock|urlencode }}&amp;{% endif %}{% if request.GET.sort %}sort={{ request.GET.sort|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&amp;{% endif %}{% if request.GET.category %}category={{ request.GET.category|urlencode }}&amp;{% endif %}{% if request.GET.status %}status={{ request.GET.status|urlencode }}&amp;{% endif %}{% if request.GET.stock %}stock={{ request.GET.stock|urlencode }}&amp;{% endif %}{% if request.GET.sort %}sort={{ request.GET.sort|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+    </div>
+</nav>
+{% endif %}

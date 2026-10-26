@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<section class="admin-confirm-card">
+    <p class="eyebrow">Catalog / Confirmation</p><h1>Delete this product?</h1>
+    <p><strong>{{ product.name }}</strong> will be permanently removed if it is not referenced by an order, active cart, or wishlist. Archiving is safer when customers have saved the product.</p>
+    <form method="post">{% csrf_token %}<a class="admin-secondary-button" href="{% url 'myadmin:product_detail' product.pk %}">Cancel</a><button class="admin-danger-button" type="submit">Delete product</button></form>
+</section>
+{% endblock %}

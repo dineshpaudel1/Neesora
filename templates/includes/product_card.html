@@ -1,25 +1,70 @@
-{% load static %}
 <article class="product-card">
-    <div class="product-card-image-wrap">
-        {% with product.images.first as primary_image %}
-            {% if primary_image %}
-                <img src="{{ primary_image.image.url }}" alt="{{ product.name }}" class="product-card-image">
-            {% elif fallback_image %}
-                <img src="{% static fallback_image %}" alt="{{ product.name }}" class="product-card-image">
-            {% else %}
-                <img src="{% static 'images/pone.jpg' %}" alt="{{ product.name }}" class="product-card-image">
+    <div class="product-card-image-wrap-outer">
+        <a class="product-card-image-link" href="{% url 'products:product_detail' product.slug %}" aria-label="View {{ product.name }}" tabindex="-1">
+            <div class="product-card-image-wrap">
+                {% with product.images.all|first as primary_image %}
+                    {% if primary_image %}
+                        <img
+                            src="{{ primary_image.image.url }}"
+                            alt="{{ primary_image.alt_text|default:product.name }}"
+                            class="product-card-image"
+                            loading="lazy"
+                            decoding="async"
+                        >
+                    {% else %}
+                        <div class="product-card-placeholder" role="img" aria-label="Product image not yet available">
+                            <span aria-hidden="true">N</span>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </a>
+        {% if product.discount_price is not None or product.is_new_arrival or product.is_best_seller %}
+        <div class="product-card-badges" aria-hidden="true">
+            {% if product.discount_price is not None %}
+                <span class="badge badge-sale">-{{ product.discount_percentage|floatformat:0 }}%</span>
             {% endif %}
-        {% endwith %}
+            {% if product.is_new_arrival %}
+                <span class="badge badge-new">New</span>
+            {% endif %}
+            {% if product.is_best_seller %}
+                <span class="badge badge-bestseller">Popular</span>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
     <div class="product-card-content">
         <p class="product-category">{{ product.category.name }}</p>
         <h3><a href="{% url 'products:product_detail' product.slug %}">{{ product.name }}</a></h3>
         <div class="product-price-row">
-            {% if product.discount_price %}
-                <span class="product-price current-price">NPR {{ product.discount_price }}</span>
-                <span class="product-price original-price">NPR {{ product.price }}</span>
+            {% if product.discount_price is not None %}
+                <span class="product-price current-price">{{ site_currency }} {{ product.discount_price|floatformat:2 }}</span>
+                <span class="product-price original-price">{{ site_currency }} {{ product.price|floatformat:2 }}</span>
             {% else %}
-                <span class="product-price current-price">NPR {{ product.price }}</span>
+                <span class="product-price current-price">{{ site_currency }} {{ product.price|floatformat:2 }}</span>
+            {% endif %}
+        </div>
+        <div class="product-card-actions">
+            <a class="product-card-details" href="{% url 'products:product_detail' product.slug %}">View details</a>
+            {% if product.is_available %}
+                <form method="post" action="{% url 'cart:add_to_cart' product.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <button
+                        class="button button-dark product-card-buy"
+                        type="submit"
+                        name="next"
+                        value="{{ request.get_full_path }}"
+                    >Add to bag</button>
+                    <button
+                        class="button button-secondary product-card-buy-now"
+                        type="submit"
+                        name="next"
+                        value="{% url 'orders:checkout' %}"
+                    >Buy now</button>
+                </form>
+            {% else %}
+                <span class="product-card-out-of-stock" aria-label="Out of stock">Out of stock</span>
             {% endif %}
         </div>
     </div>

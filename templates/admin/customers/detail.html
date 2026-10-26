@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">Customers / Profile</p><h1>{% if customer.customer_profile.full_name %}{{ customer.customer_profile.full_name }}{% else %}{{ customer.get_full_name|default:customer.username }}{% endif %}</h1><p>Customer since {{ customer.date_joined|date:"M j, Y" }}</p></div><a class="admin-secondary-button" href="{% url 'myadmin:customers' %}">Back to customers</a></div>
+<section class="admin-customer-summary">
+    <article class="admin-panel admin-order-info"><p class="eyebrow">Contact information</p><p><strong>Email</strong><br>{{ customer.email|default:"Not provided" }}</p><p><strong>Phone</strong><br>{{ customer.customer_profile.phone_number|default:"Not provided" }}</p><p><strong>Account status</strong><br>{% if customer.is_active %}Active{% else %}Inactive{% endif %}</p></article>
+    <article class="admin-panel admin-order-info"><p class="eyebrow">Saved address</p><p>{{ customer.customer_profile.address|default:"Not provided" }}{% if customer.customer_profile.city %}<br>{{ customer.customer_profile.city }}{% endif %}{% if customer.customer_profile.province %}, {{ customer.customer_profile.province }}{% endif %}{% if customer.customer_profile.postal_code %} {{ customer.customer_profile.postal_code }}{% endif %}</p></article>
+</section>
+<section class="admin-panel admin-customer-orders"><div class="admin-section-title"><div><p class="eyebrow">Customer activity</p><h2>Order history</h2></div><span>{{ order_count }} order{{ order_count|pluralize }}</span></div>
+    {% if orders %}<div class="admin-table-scroll"><table class="admin-data-table"><thead><tr><th>Order</th><th>Date</th><th>Payment</th><th>Status</th><th>Total</th></tr></thead><tbody>{% for order in orders %}<tr><td><a class="admin-row-action" href="{% url 'myadmin:order_detail' order.pk %}">{{ order.order_number }}</a></td><td>{{ order.created_at|date:"M j, Y" }}</td><td>{{ order.payment_status|title }}</td><td>{{ order.get_order_status_display }}</td><td>{{ site_currency }} {{ order.total_amount|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="management-empty-state">This customer has no recorded orders.</p>{% endif %}
+</section>
+{% endblock %}

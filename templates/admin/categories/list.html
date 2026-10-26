@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="admin-page-heading"><div><p class="eyebrow">Catalog</p><h1>Categories</h1><p>Organize products into the collections shown in your shop.</p></div><a class="admin-primary-button" href="{% url 'myadmin:category_add' %}"><span aria-hidden="true">+</span> Add category</a></div>
+<section class="admin-panel">
+    <form class="admin-filter-bar admin-filter-bar-search" method="get"><label class="admin-search-field"><span class="sr-only">Search categories</span><input class="admin-input" type="search" name="q" value="{{ search_query }}" placeholder="Search categories…"></label><button class="admin-secondary-button" type="submit">Search</button></form>
+    {% if categories %}
+        <div class="admin-table-scroll"><table class="admin-data-table">
+            <thead><tr><th>Category</th><th>Products</th><th>Store visibility</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody>{% for category in categories %}<tr>
+                <td><span class="admin-category-cell">{% if category.image %}<img src="{{ category.image.url }}" alt="" loading="lazy">{% else %}<span class="admin-product-placeholder" aria-hidden="true">N</span>{% endif %}<span><strong>{{ category.name }}</strong><small>{{ category.slug }}</small></span></span></td>
+                <td>{{ category.product_count }}</td><td><span class="admin-status {% if category.is_active %}admin-status-published{% else %}admin-status-archived{% endif %}">{% if category.is_active %}Active{% else %}Hidden{% endif %}</span></td><td>{{ category.updated_at|date:"M j, Y" }}</td>
+                <td class="admin-table-actions"><a class="admin-row-action" href="{% url 'myadmin:category_edit' category.pk %}">Edit</a><a class="admin-row-action admin-row-action-danger" href="{% url 'myadmin:category_delete' category.pk %}">Delete</a></td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        {% include "admin/includes/pagination.html" %}
+    {% else %}
+        <div class="admin-empty-state"><span class="admin-empty-mark" aria-hidden="true">▤</span><h2>No categories found</h2><p>{% if search_query %}Try another search term.{% else %}Create categories to help customers browse your products.{% endif %}</p><a class="admin-primary-button" href="{% url 'myadmin:category_add' %}">Add category</a></div>
+    {% endif %}
+</section>
+{% endblock %}

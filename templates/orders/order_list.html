@@ -23,8 +23,9 @@
                         <span class="order-status status-{{ order.order_status }}">{{ order.order_status|title }}</span>
                     </div>
                     <div class="order-card-meta">
-                        <span>Total: NPR {{ order.total_amount }}</span>
+                        <span>Total: {{ site_currency }} {{ order.total_amount|floatformat:2 }}</span>
                         <span>{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+                        <span>Payment: {{ order.payment_status|title }}</span>
                     </div>
                     <a class="button button-secondary" href="{% url 'orders:order_detail' order.order_number %}">View details</a>
                 </article>

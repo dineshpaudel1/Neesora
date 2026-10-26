@@ -14,7 +14,14 @@
         <form method="post">
             {% csrf_token %}
             {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-            {{ form.as_p }}
+            {% for field in form %}
+                <div class="form-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.errors %}<div class="form-errors" role="alert">{{ field.errors }}</div>{% endif %}
+                    {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+                </div>
+            {% endfor %}
             <button class="button button-dark" type="submit">Login</button>
         </form>
         <p class="auth-link-row">

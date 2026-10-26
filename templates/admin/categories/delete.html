@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<section class="admin-confirm-card"><p class="eyebrow">Catalog / Confirmation</p><h1>Delete this category?</h1><p><strong>{{ category.name }}</strong> can be deleted only when it has no products. This action cannot be undone.</p><form method="post">{% csrf_token %}<a class="admin-secondary-button" href="{% url 'myadmin:categories' %}">Cancel</a><button class="admin-danger-button" type="submit">Delete category</button></form></section>
+{% endblock %}

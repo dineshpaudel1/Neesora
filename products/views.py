@@ -76,7 +76,7 @@ def product_detail(request, slug):
     )
     reviews = (
         Review.objects.filter(product=product, is_approved=True)
-        .select_related('user__customerprofile')
+        .select_related('user__customer_profile')
         .order_by('-created_at')
     )
     rating_data = reviews.aggregate(avg=Avg('rating'))

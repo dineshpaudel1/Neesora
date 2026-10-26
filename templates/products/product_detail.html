@@ -203,8 +203,8 @@
                             <div class="reviewer-avatar" aria-hidden="true">{{ review.user.username|first|upper }}</div>
                             <div>
                                 <strong class="reviewer-name">
-                                    {% if review.user.customerprofile.display_name %}
-                                        {{ review.user.customerprofile.display_name }}
+                                    {% if review.user.customer_profile.display_name %}
+                                        {{ review.user.customer_profile.display_name }}
                                     {% else %}
                                         {{ review.user.username }}
                                     {% endif %}

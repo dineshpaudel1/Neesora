@@ -1,3 +1,4 @@
+import secrets
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -279,13 +280,18 @@ class CustomerCheckoutTests(TestCase):
             stock_quantity=5,
             product_status=Product.STATUS_PUBLISHED,
         )
+        self.customer = get_user_model().objects.create_user(
+            username="checkout-test-customer",
+            email="checkout-test@example.com",
+            password="CheckoutPass!482",
+        )
+        self.client.force_login(self.customer)
 
     def add_to_cart(self, quantity=2):
         self.client.post(
             reverse("cart:add_to_cart", args=[self.product.pk]),
             {"quantity": str(quantity)},
         )
-        return self.client.session.session_key
 
     def checkout_payload(self, response, **overrides):
         payload = {
@@ -306,7 +312,15 @@ class CustomerCheckoutTests(TestCase):
         payload.update(overrides)
         return payload
 
-    def test_checkout_page_requires_a_cart_and_provides_guest_checkout(self):
+    def test_checkout_redirects_unauthenticated_users_to_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("orders:checkout"))
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={reverse('orders:checkout')}",
+        )
+
+    def test_checkout_page_requires_cart_and_shows_secure_checkout(self):
         empty = self.client.get(reverse("orders:checkout"))
         self.assertRedirects(empty, reverse("cart:cart"))
 
@@ -319,8 +333,8 @@ class CustomerCheckoutTests(TestCase):
         self.assertContains(response, "NPR 3100.00")
         self.assertContains(response, 'name="checkout_reference"')
 
-    def test_guest_cod_checkout_creates_order_payment_and_clears_cart_once(self):
-        session_key = self.add_to_cart(quantity=2)
+    def test_authenticated_cod_checkout_creates_order_payment_and_clears_cart_once(self):
+        self.add_to_cart(quantity=2)
         checkout_page = self.client.get(reverse("orders:checkout"))
         payload = self.checkout_payload(checkout_page)
 
@@ -328,7 +342,7 @@ class CustomerCheckoutTests(TestCase):
 
         self.assertEqual(placed.status_code, 302)
         order = Order.objects.get()
-        self.assertEqual(order.user, None)
+        self.assertEqual(order.user, self.customer)
         self.assertEqual(order.customer_name, "Asha Customer")
         self.assertEqual(order.phone_number, "+9779800000000")
         self.assertEqual(order.email, "")
@@ -349,7 +363,7 @@ class CustomerCheckoutTests(TestCase):
         self.assertEqual(payment.status, Payment.STATUS_PENDING)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 3)
-        self.assertFalse(CartItem.objects.filter(session_key=session_key).exists())
+        self.assertFalse(CartItem.objects.filter(user=self.customer).exists())
         self.assertTrue(order.status_history.filter(new_status=Order.STATUS_PENDING).exists())
 
         confirmation_url = placed["Location"]
@@ -398,10 +412,10 @@ class CustomerCheckoutTests(TestCase):
         )
         self.assertEqual(bad_address.status_code, 200)
         self.assertEqual(Order.objects.count(), 0)
-        self.assertTrue(CartItem.objects.exists())
+        self.assertTrue(CartItem.objects.filter(user=self.customer).exists())
 
     def test_stock_is_revalidated_and_insufficient_stock_keeps_cart(self):
-        session_key = self.add_to_cart(quantity=2)
+        self.add_to_cart(quantity=2)
         checkout_page = self.client.get(reverse("orders:checkout"))
         Product.objects.filter(pk=self.product.pk).update(stock_quantity=1)
 
@@ -413,13 +427,13 @@ class CustomerCheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Only 1 of Checkout Tote")
         self.assertEqual(Order.objects.count(), 0)
-        self.assertTrue(CartItem.objects.filter(session_key=session_key).exists())
+        self.assertTrue(CartItem.objects.filter(user=self.customer).exists())
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 1)
 
     @patch("orders.services.Payment.objects.create", side_effect=DatabaseError("payment write failed"))
     def test_database_failure_rolls_back_order_items_stock_and_cart(self, _payment_create):
-        session_key = self.add_to_cart(quantity=2)
+        self.add_to_cart(quantity=2)
         checkout_page = self.client.get(reverse("orders:checkout"))
         payload = self.checkout_payload(checkout_page)
 
@@ -428,7 +442,7 @@ class CustomerCheckoutTests(TestCase):
 
         self.assertFalse(Order.objects.exists())
         self.assertFalse(OrderItem.objects.exists())
-        self.assertTrue(CartItem.objects.filter(session_key=session_key).exists())
+        self.assertTrue(CartItem.objects.filter(user=self.customer).exists())
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 5)
 
@@ -448,41 +462,66 @@ class CustomerCheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Order.objects.count(), 0)
 
-    def test_guest_confirmation_requires_secret_token(self):
+    def test_confirmation_page_enforces_ownership_for_authenticated_orders(self):
         self.add_to_cart()
         checkout_page = self.client.get(reverse("orders:checkout"))
+        self.client.post(reverse("orders:checkout"), self.checkout_payload(checkout_page))
+        order = Order.objects.get()
+
+        ok = self.client.get(
+            reverse("orders:confirmation", args=[order.order_number, order.guest_access_token])
+        )
+        self.assertEqual(ok.status_code, 200)
+
+        other = get_user_model().objects.create_user(
+            username="other-confirm-customer",
+            email="other-confirm@example.com",
+            password="OtherPass!482",
+        )
+        self.client.force_login(other)
+        denied = self.client.get(
+            reverse("orders:confirmation", args=[order.order_number, order.guest_access_token])
+        )
+        self.assertEqual(denied.status_code, 403)
+
+    def test_legacy_guest_order_confirmation_requires_secret_token(self):
+        """Backward compat: existing guest orders in the database still use the token."""
+        token = secrets.token_urlsafe(32)
+        order = Order.objects.create(
+            user=None,
+            order_number="NSR-GUEST-LEGACY-1",
+            customer_name="Legacy Guest",
+            phone_number="+9779800000000",
+            address="Old address",
+            city="Lalitpur",
+            province="Bagmati",
+            subtotal=Decimal("1500.00"),
+            total_amount=Decimal("1500.00"),
+            guest_access_token=token,
+        )
+        self.client.logout()
+
+        denied = self.client.get(
+            reverse("orders:confirmation", args=[order.order_number, "wrong-token"])
+        )
+        self.assertEqual(denied.status_code, 403)
+
+        ok = self.client.get(
+            reverse("orders:confirmation", args=[order.order_number, order.guest_access_token])
+        )
+        self.assertEqual(ok.status_code, 200)
+
+    def test_authenticated_checkout_is_added_to_only_owners_order_history(self):
+        CartItem.objects.create(user=self.customer, product=self.product, quantity=1)
+        checkout_page = self.client.get(reverse("orders:checkout"))
+
         self.client.post(
             reverse("orders:checkout"),
             self.checkout_payload(checkout_page),
         )
-        order = Order.objects.get()
-
-        denied = self.client.get(
-            reverse(
-                "orders:confirmation",
-                args=[order.order_number, "wrong-token"],
-            )
-        )
-
-        self.assertEqual(denied.status_code, 403)
-
-    def test_authenticated_checkout_is_added_to_only_owners_order_history(self):
-        customer = get_user_model().objects.create_user(
-            username="checkout-customer",
-            email="checkout-customer@example.com",
-            password="StrongBagPass!482",
-        )
-        self.client.force_login(customer)
-        CartItem.objects.create(user=customer, product=self.product, quantity=1)
-        checkout_page = self.client.get(reverse("orders:checkout"))
-
-        placed = self.client.post(
-            reverse("orders:checkout"),
-            self.checkout_payload(checkout_page),
-        )
 
         order = Order.objects.get()
-        self.assertEqual(order.user, customer)
+        self.assertEqual(order.user, self.customer)
         self.assertEqual(self.client.get(reverse("orders:orders")).status_code, 200)
         self.assertEqual(
             self.client.get(
@@ -502,3 +541,122 @@ class CustomerCheckoutTests(TestCase):
             ).status_code,
             404,
         )
+
+
+class CustomerCancelOrderTests(TestCase):
+    """Tests for the customer-facing cancel order view."""
+
+    def setUp(self):
+        self.customer = get_user_model().objects.create_user(
+            username="cancel-customer",
+            email="cancel-customer@example.com",
+            password="CancelPass!123",
+        )
+        category = Category.objects.create(name="Cancel bags")
+        self.product = Product.objects.create(
+            name="Cancellable Tote",
+            sku="CANCEL-TOTE",
+            description="A tote used in cancel tests.",
+            category=category,
+            price=Decimal("1200.00"),
+            stock_quantity=5,
+            product_status=Product.STATUS_PUBLISHED,
+        )
+        self.order = Order.objects.create(
+            user=self.customer,
+            order_number="NSR-CANCEL-1",
+            customer_name="Cancel Customer",
+            phone_number="+9779800000001",
+            email="cancel-customer@example.com",
+            address="Test address",
+            city="Lalitpur",
+            province="Bagmati",
+            subtotal=Decimal("1200.00"),
+            total_amount=Decimal("1200.00"),
+            order_status=Order.STATUS_PENDING,
+            stock_deducted=True,
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            product_name=self.product.name,
+            quantity=1,
+            unit_price=Decimal("1200.00"),
+        )
+        Product.objects.filter(pk=self.product.pk).update(stock_quantity=4)
+        self.client.force_login(self.customer)
+
+    def _cancel_url(self):
+        return reverse("orders:cancel_order", args=[self.order.order_number])
+
+    def test_customer_can_cancel_pending_order_and_stock_is_restored(self):
+        response = self.client.post(self._cancel_url())
+
+        self.assertRedirects(
+            response,
+            reverse("orders:order_detail", args=[self.order.order_number]),
+        )
+        self.order.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(self.order.order_status, Order.STATUS_CANCELLED)
+        self.assertFalse(self.order.stock_deducted)
+        self.assertEqual(self.product.stock_quantity, 5)
+        self.assertTrue(
+            self.order.status_history.filter(new_status=Order.STATUS_CANCELLED).exists()
+        )
+
+    def test_customer_cannot_cancel_confirmed_order(self):
+        self.order.order_status = Order.STATUS_CONFIRMED
+        self.order.save(update_fields=["order_status"])
+
+        response = self.client.post(self._cancel_url())
+
+        self.assertRedirects(
+            response,
+            reverse("orders:order_detail", args=[self.order.order_number]),
+        )
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.order_status, Order.STATUS_CONFIRMED)
+
+    def test_cancel_requires_post_not_get(self):
+        response = self.client.get(self._cancel_url())
+        self.assertEqual(response.status_code, 405)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.order_status, Order.STATUS_PENDING)
+
+    def test_anonymous_cancel_redirects_to_login(self):
+        self.client.logout()
+        response = self.client.post(self._cancel_url())
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self._cancel_url()}",
+        )
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.order_status, Order.STATUS_PENDING)
+
+    def test_other_customer_cannot_cancel_this_order(self):
+        other = get_user_model().objects.create_user(
+            username="other-cancel-customer",
+            email="other-cancel@example.com",
+            password="OtherPass!123",
+        )
+        self.client.force_login(other)
+        response = self.client.post(self._cancel_url())
+        self.assertEqual(response.status_code, 404)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.order_status, Order.STATUS_PENDING)
+
+    def test_cancel_order_detail_shows_cancel_button_only_when_pending(self):
+        # Pending — cancel button visible
+        detail = self.client.get(
+            reverse("orders:order_detail", args=[self.order.order_number])
+        )
+        self.assertContains(detail, "Cancel order")
+
+        # Move to confirmed — cancel button gone
+        self.order.order_status = Order.STATUS_CONFIRMED
+        self.order.save(update_fields=["order_status"])
+        detail_confirmed = self.client.get(
+            reverse("orders:order_detail", args=[self.order.order_number])
+        )
+        self.assertNotContains(detail_confirmed, "Cancel order")

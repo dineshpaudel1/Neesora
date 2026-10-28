@@ -35,7 +35,15 @@
 .management-orders-table td { padding: 13px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .management-orders-table tbody tr:last-child td { border-bottom: 0; }
 .management-orders-table td:first-child a { color: var(--olive); font-weight: 600; }
-.order-status-chip { display: inline-block; padding: 4px 8px; background: var(--sand); color: var(--ink); font-size: 10px; text-transform: capitalize; }
+/* Order status chips — base + per-status colours */
+.order-status-chip { display: inline-block; padding: 3px 9px; background: var(--sand); color: var(--ink); font-size: 10px; letter-spacing: .04em; text-transform: capitalize; }
+.order-chip-pending   { background: #f7f1d9; color: #6b5a1f; }
+.order-chip-confirmed { background: #edf3ea; color: #2f5226; }
+.order-chip-processing{ background: #e8f0fb; color: #1d3f6e; }
+.order-chip-shipped   { background: #ebe7f7; color: #3e2b6e; }
+.order-chip-delivered { background: #e3f1e3; color: #235a23; }
+.order-chip-cancelled { background: #f5e4e4; color: #7a2a2a; }
+
 .management-empty-state { margin: 0; padding: 20px 0 5px; color: var(--muted); font-size: 13px; }
 .admin-login-page { display: grid; min-height: 100vh; place-items: center; padding: 24px; }
 .admin-login-card { width: min(100%, 410px); padding: clamp(28px, 7vw, 48px); border: 1px solid var(--line); background: var(--paper); }
@@ -186,24 +194,78 @@
 .admin-readonly-notice { padding: 16px; border: 1px solid #e4d8b9; background: #faf6eb; color: #75613a; }
 .admin-readonly-notice strong { font-size: 11px; }
 .admin-readonly-notice p { margin: 6px 0 0; font-size: 10px; line-height: 1.6; }
-.admin-order-status-overview { margin: 17px 0; padding: 22px; }
-.admin-order-status-overview .management-section-heading { align-items: center; }
+.admin-order-status-overview { margin: 0 0 17px; padding: 20px 22px; }
+.admin-order-status-overview .management-section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .management-status-total { color: var(--muted); font-size: 11px; }
 .management-status-total strong { color: var(--ink); }
-.management-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; }
-.management-status-grid > div { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 10px; padding: 11px; border: 1px solid var(--line); }
-.management-status-grid span { color: var(--muted); font-size: 10px; }
-.management-status-grid strong { font-family: var(--serif); font-size: 22px; font-weight: 400; }
+.admin-status-stat-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.admin-status-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    border: 1px solid var(--line);
+    background: white;
+    text-decoration: none;
+    transition: border-color .18s ease, background .18s ease;
+}
+.admin-status-stat:hover { border-color: var(--olive); background: #f8f7f2; }
+.admin-status-stat.is-active { border-color: var(--olive); background: #f3f5ef; }
+.admin-status-stat-count { font-family: var(--serif); font-size: 24px; font-weight: 400; color: var(--ink); line-height: 1; }
+.admin-status-stat-label { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .admin-date-filter { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; white-space: nowrap; }
 .admin-date-filter .admin-input { min-width: 130px; }
 .admin-order-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .admin-order-filters .admin-search-field { grid-column: span 2; }
 .admin-order-filters .admin-date-filter .admin-input { min-width: 0; }
-.admin-order-history { margin-top: 17px; padding: 18px 0; }
-.admin-status-history { display: grid; gap: 0; margin: 0; padding: 0 22px; list-style: none; }
-.admin-status-history li { display: grid; grid-template-columns: minmax(115px, .5fr) minmax(160px, .7fr) minmax(120px, .6fr) 1fr; align-items: baseline; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 11px; }
-.admin-status-history time, .admin-status-history span, .admin-status-history p { color: var(--muted); }
-.admin-status-history p { margin: 0; }
+/* Fulfillment action buttons */
+.admin-fulfillment-panel .admin-fulfillment-current { margin: 10px 0 16px; font-size: 11px; color: var(--muted); }
+.admin-fulfillment-form { display: grid; gap: 14px; margin-top: 10px; }
+.admin-fulfillment-form .admin-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); background: white; }
+.admin-fulfillment-form textarea.admin-input { min-height: 64px; resize: vertical; }
+.admin-fulfillment-actions { display: grid; gap: 8px; }
+.admin-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, transform .12s ease;
+}
+.admin-action-primary {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: white;
+}
+.admin-action-primary:hover { background: var(--olive); border-color: var(--olive); transform: translateY(-1px); }
+.admin-action-danger {
+    border-color: rgba(183, 102, 66, .5);
+    background: transparent;
+    color: var(--accent);
+}
+.admin-action-danger:hover { background: rgba(183, 102, 66, .06); border-color: var(--accent); }
+
+/* Status history timeline */
+.admin-order-history { margin-top: 17px; padding: 0; }
+.admin-status-history { display: grid; gap: 0; margin: 0; padding: 0 22px 8px; list-style: none; }
+.admin-history-entry {
+    display: grid;
+    grid-template-columns: 130px minmax(160px, 1fr) minmax(120px, 1fr) 1fr;
+    align-items: baseline;
+    gap: 14px;
+    padding: 13px 0;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+}
+.admin-history-entry time { color: var(--muted); }
+.admin-history-actor { color: var(--muted); }
+.admin-history-badge { font-size: 10px; }
+.admin-history-note { grid-column: 1 / -1; margin: 4px 0 0; padding: 6px 10px; background: var(--sand); color: var(--muted); font-size: 10px; font-style: italic; line-height: 1.5; }
 .admin-order-info form { display: grid; gap: 13px; margin-top: 13px; }
 .admin-order-info form .admin-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); background: white; }
 .admin-order-info form textarea.admin-input { min-height: 70px; resize: vertical; }
@@ -246,9 +308,11 @@
     .admin-form-section { padding: 18px; }
     .admin-detail-grid { grid-template-columns: 1fr; }
     .admin-order-grid, .admin-customer-summary { grid-template-columns: 1fr; }
-    .admin-status-history li { grid-template-columns: 1fr 1fr; }
-    .admin-order-status-overview { padding: 18px; }
+    .admin-history-entry { grid-template-columns: 1fr 1fr; }
+    .admin-order-status-overview { padding: 16px 18px; }
     .management-status-total { font-size: 10px; }
+    .admin-status-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .admin-status-stat-count { font-size: 20px; }
     .admin-product-preview > img, .admin-large-placeholder { max-height: 340px; }
     .admin-confirm-card { margin: 20px auto; padding: 24px 19px; }
     .admin-confirm-card form { justify-content: stretch; }
@@ -275,7 +339,7 @@
 
 @media print {
     .admin-sidebar, .admin-topbar, .admin-page-heading .admin-heading-actions, .admin-readonly-notice { display: none !important; }
-    .admin-order-info form { display: none !important; }
+    .admin-order-info form, .admin-fulfillment-panel { display: none !important; }
     .admin-main-column { margin: 0; }
     .admin-content { width: 100%; padding: 0; }
     .admin-order-grid { grid-template-columns: 1fr; }

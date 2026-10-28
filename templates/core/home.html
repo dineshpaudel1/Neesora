@@ -10,45 +10,35 @@
 {% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="page-width hero-layout">
-        <div class="hero-copy">
-            <p class="eyebrow">A bag for your everyday</p>
-            <h1>Find the bag that fits your everyday.</h1>
-            <p class="hero-description">{{ site_description }}</p>
-            <div class="hero-actions">
-                <a class="button button-dark" href="{% url 'products:shop' %}">Explore all bags <span aria-hidden="true">→</span></a>
-                <a class="text-link" href="{% url 'core:about' %}">Discover Neesora</a>
-            </div>
-            <p class="hero-note">Based in {{ site_address }}</p>
-        </div>
-        <div class="hero-art">
-            <img
-                class="hero-photo"
-                src="{% static 'images/hero-bag.jpg' %}"
-                alt="Bag from the Neesora collection"
-                width="1273"
-                height="1800"
-                fetchpriority="high"
-                decoding="async"
-            >
-            <div class="hero-art-copy" aria-hidden="true">
-                <span>{{ site_name }} / BAGS FOR EVERY JOURNEY</span>
-                <span class="hero-art-title">Carry your day<br>your way.</span>
-                <span>LALITPUR · NEPAL</span>
-            </div>
+
+{# ─── HERO ─── #}
+<section class="hero" aria-label="Neesora campaign">
+    <div class="hero-bg">
+        <img
+            class="hero-photo"
+            src="{% static 'images/pfive.jpg' %}"
+            alt="Neesora bag — the new collection"
+            fetchpriority="high"
+            decoding="async"
+        >
+    </div>
+    <div class="hero-fg">
+        <div class="hero-text page-width">
+            <p class="hero-eyebrow">The Collection</p>
+            <h1 class="hero-headline">Carry your day,<br>your way.</h1>
+            <a class="hero-discover" href="{% url 'products:shop' %}">Explore the Collection</a>
         </div>
     </div>
 </section>
 
+{# ─── NEW ARRIVALS ─── #}
 <section class="page-width product-section new-arrivals" id="new-arrivals" aria-labelledby="new-arrivals-title">
     <div class="section-heading">
         <div>
             <p class="eyebrow">From our current collection</p>
-            <h2 id="new-arrivals-title">New arrivals</h2>
-            <p class="section-description">Explore the latest bags available from Neesora.</p>
+            <h2 id="new-arrivals-title">New Arrivals</h2>
         </div>
-        <a class="text-link" href="{% url 'products:shop' %}">View all bags <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="{% url 'products:shop' %}">View all <span aria-hidden="true">→</span></a>
     </div>
     {% if new_arrivals %}
         <div class="product-grid">
@@ -66,36 +56,14 @@
     {% endif %}
 </section>
 
-<section class="page-width product-section popular-picks" id="popular-bags" aria-labelledby="popular-picks-title">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">From the collection</p>
-            <h2 id="popular-picks-title">Popular bags</h2>
-            <p class="section-description">Explore the bags available from Neesora.</p>
-        </div>
-        <a class="text-link" href="{% url 'products:shop' %}">Explore all bags <span aria-hidden="true">→</span></a>
+{# ─── BRAND STORY ─── #}
+<section class="brand-story-section" aria-label="About Neesora">
+    <div class="page-width brand-story-inner">
+        <p class="eyebrow">About Neesora</p>
+        <h2>Bags made for the moments that matter.</h2>
+        <p>Neesora is a Lalitpur-based bag brand focused on quality, design, and everyday usability. Each bag is chosen for its character, durability, and honest price — made to be carried through the moments that define your day.</p>
+        <a class="text-link" href="{% url 'core:about' %}">Our Story <span aria-hidden="true">→</span></a>
     </div>
-    {% if home_categories %}
-        <nav class="popular-category-links" aria-label="Browse bags by category">
-            <span>Shop by category</span>
-            {% for category in home_categories %}
-                <a href="{% url 'products:category' category.slug %}">{{ category.name }} <span aria-hidden="true">→</span></a>
-            {% endfor %}
-        </nav>
-    {% endif %}
-    {% if popular_products %}
-        <div class="product-grid">
-            {% for product in popular_products %}
-                {% include "includes/product_card.html" with product=product %}
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-collection">
-            <span class="empty-mark" aria-hidden="true">N</span>
-            <h3>Discover the Neesora collection.</h3>
-            <p>Explore all available bags and find one that suits your day.</p>
-            <a class="text-link" href="{% url 'products:shop' %}">View all bags <span aria-hidden="true">→</span></a>
-        </div>
-    {% endif %}
 </section>
+
 {% endblock %}

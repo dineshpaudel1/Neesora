@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -85,6 +85,19 @@ def order_list(request):
         orders.order_by(sort_fields.get(sort, "-created_at"), "pk"),
         25,
     ).get_page(request.GET.get("page"))
+
+    # Aggregate counts across ALL orders (unfiltered) for the stats panel.
+    status_counts_qs = (
+        Order.objects.values("order_status")
+        .annotate(n=Count("id"))
+    )
+    raw_counts = {row["order_status"]: row["n"] for row in status_counts_qs}
+    status_stats = [
+        (value, label, raw_counts.get(value, 0))
+        for value, label in Order.STATUS_CHOICES
+    ]
+    total_orders = sum(raw_counts.values()) if raw_counts else 0
+
     return render(request, "admin/orders/list.html", {
         "page_title": "Orders",
         "active_section": "orders",
@@ -99,7 +112,18 @@ def order_list(request):
         "filter_form": filter_form,
         "payment_status_choices": Payment.STATUS_CHOICES,
         "payment_method_choices": Order.PAYMENT_CHOICES,
+        "status_stats": status_stats,
+        "total_orders": total_orders,
     })
+
+
+_ACTION_LABELS = {
+    Order.STATUS_CONFIRMED: ("Confirm Order", "primary"),
+    Order.STATUS_PROCESSING: ("Start Processing", "primary"),
+    Order.STATUS_SHIPPED: ("Mark as Shipped", "primary"),
+    Order.STATUS_DELIVERED: ("Mark as Delivered", "primary"),
+    Order.STATUS_CANCELLED: ("Cancel Order", "danger"),
+}
 
 
 @designated_admin_required
@@ -111,15 +135,18 @@ def order_detail(request, order_id):
         pk=order_id,
     )
     status_form = OrderStatusForm(order=order)
+    allowed_choices = status_form.fields["order_status"].choices
+    action_buttons = [
+        (value, *_ACTION_LABELS.get(value, (label, "primary")))
+        for value, label in allowed_choices
+    ]
     return render(request, "admin/orders/detail.html", {
         "page_title": f"Order {order.order_number}",
         "active_section": "orders",
         "order": order,
         "status_form": status_form,
-        "can_cancel": any(
-            value == Order.STATUS_CANCELLED
-            for value, _label in status_form.fields["order_status"].choices
-        ),
+        "action_buttons": action_buttons,  # [(value, label, style), ...]
+        "can_cancel": any(v == Order.STATUS_CANCELLED for v, _ in allowed_choices),
     })
 
 

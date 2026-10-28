@@ -8,9 +8,49 @@
         <div>
             <p class="eyebrow">Order details</p>
             <h1>{{ order.order_number }}</h1>
+            <p class="catalogue-count">Placed {{ order.created_at|date:"d M Y · g:i A" }}</p>
         </div>
-        <span class="order-status status-{{ order.order_status }}">{{ order.order_status|title }}</span>
+        <span class="order-status status-{{ order.order_status }}">{{ order.get_order_status_display }}</span>
     </div>
+
+    {% if order.order_status != 'cancelled' %}
+    <div class="order-progress" aria-label="Order progress">
+        {% with s=order.order_status %}
+        <div class="order-progress-track">
+            <div class="order-progress-step {% if s == 'pending' or s == 'confirmed' or s == 'processing' or s == 'shipped' or s == 'delivered' %}is-done{% endif %}">
+                <div class="order-progress-dot {% if s == 'pending' %}is-current{% endif %}"></div>
+                <span>Pending</span>
+            </div>
+            <div class="order-progress-line {% if s == 'confirmed' or s == 'processing' or s == 'shipped' or s == 'delivered' %}is-done{% endif %}"></div>
+            <div class="order-progress-step {% if s == 'confirmed' or s == 'processing' or s == 'shipped' or s == 'delivered' %}is-done{% endif %}">
+                <div class="order-progress-dot {% if s == 'confirmed' %}is-current{% endif %}"></div>
+                <span>Confirmed</span>
+            </div>
+            <div class="order-progress-line {% if s == 'processing' or s == 'shipped' or s == 'delivered' %}is-done{% endif %}"></div>
+            <div class="order-progress-step {% if s == 'processing' or s == 'shipped' or s == 'delivered' %}is-done{% endif %}">
+                <div class="order-progress-dot {% if s == 'processing' %}is-current{% endif %}"></div>
+                <span>Processing</span>
+            </div>
+            <div class="order-progress-line {% if s == 'shipped' or s == 'delivered' %}is-done{% endif %}"></div>
+            <div class="order-progress-step {% if s == 'shipped' or s == 'delivered' %}is-done{% endif %}">
+                <div class="order-progress-dot {% if s == 'shipped' %}is-current{% endif %}"></div>
+                <span>Shipped</span>
+            </div>
+            <div class="order-progress-line {% if s == 'delivered' %}is-done{% endif %}"></div>
+            <div class="order-progress-step {% if s == 'delivered' %}is-done{% endif %}">
+                <div class="order-progress-dot {% if s == 'delivered' %}is-current{% endif %}"></div>
+                <span>Delivered</span>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="form-message form-message-{{ message.tags }}" role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
 
     <div class="order-layout">
         <div class="content-card customer-order-card">
@@ -19,16 +59,23 @@
                 <div class="order-item-row">
                     <div>
                         <strong>{{ item.product_name }}</strong>
-                        <p>Qty: {{ item.quantity }}</p>
+                        <p>Qty: {{ item.quantity }} &times; {{ site_currency }} {{ item.unit_price|floatformat:2 }}</p>
                     </div>
                     <span>{{ site_currency }} {{ item.line_total|floatformat:2 }}</span>
                 </div>
             {% endfor %}
+
             <h2 class="customer-history-heading">Status history</h2>
             <ol class="customer-status-history">
                 {% for entry in order.status_history.all %}
-                    <li><strong>{{ entry.get_new_status_display }}</strong><time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"M j, Y · g:i A" }}</time></li>
-                {% empty %}<li>{{ order.get_order_status_display }}</li>{% endfor %}
+                    <li>
+                        <strong>{{ entry.get_new_status_display }}</strong>
+                        <time datetime="{{ entry.created_at|date:'c' }}">{{ entry.created_at|date:"M j, Y · g:i A" }}</time>
+                        {% if entry.note %}<span class="customer-status-note">{{ entry.note }}</span>{% endif %}
+                    </li>
+                {% empty %}
+                    <li>{{ order.get_order_status_display }}</li>
+                {% endfor %}
             </ol>
         </div>
 
@@ -36,17 +83,28 @@
             <h3>Order summary</h3>
             <div class="summary-row"><span>Subtotal</span><span>{{ site_currency }} {{ order.subtotal|floatformat:2 }}</span></div>
             <div class="summary-row"><span>Delivery fee</span><span>{{ site_currency }} {{ order.shipping_fee|floatformat:2 }}</span></div>
+            {% if order.discount_amount %}
             <div class="summary-row"><span>Discount</span><span>− {{ site_currency }} {{ order.discount_amount|floatformat:2 }}</span></div>
+            {% endif %}
             <div class="summary-row total-row"><span>Total</span><strong>{{ site_currency }} {{ order.total_amount|floatformat:2 }}</strong></div>
             <div class="summary-row"><span>Payment</span><span>{{ order.get_payment_method_display }}</span></div>
-            <div class="summary-row"><span>Payment status</span><span>{{ order.payment_status|title }}</span></div>
-            <div class="summary-row"><span>Status</span><span>{{ order.get_order_status_display }}</span></div>
+            <div class="summary-row"><span>Payment status</span>
+                <span class="order-status status-{{ order.payment_status }}">{{ order.payment_status|title }}</span>
+            </div>
+
+            {% if order.order_status == 'pending' %}
+            <form method="post" action="{% url 'orders:cancel_order' order.order_number %}" class="cancel-order-form" onsubmit="return confirm('Cancel this order? This cannot be undone.')">
+                {% csrf_token %}
+                <button class="button cancel-order-button" type="submit">Cancel order</button>
+            </form>
+            {% endif %}
         </aside>
     </div>
+
     <section class="content-card customer-delivery-card">
         <h2>Delivery details</h2>
-        <p>{{ order.customer_name }} · {{ order.phone_number }}{% if order.email %} · {{ order.email }}{% endif %}</p>
-        <p>{{ order.address }}, Ward {{ order.ward_number }}, {{ order.city }}, {{ order.district }}, {{ order.province }}{% if order.postal_code %} {{ order.postal_code }}{% endif %}</p>
+        <p>{{ order.customer_name }} &middot; {{ order.phone_number }}{% if order.email %} &middot; {{ order.email }}{% endif %}</p>
+        <p>{{ order.address }}, Ward {{ order.ward_number }}, {{ order.city }}{% if order.district %}, {{ order.district }}{% endif %}, {{ order.province }}{% if order.postal_code %} {{ order.postal_code }}{% endif %}</p>
         {% if order.order_notes %}<p><strong>Delivery instructions:</strong> {{ order.order_notes|linebreaksbr }}</p>{% endif %}
     </section>
 </section>

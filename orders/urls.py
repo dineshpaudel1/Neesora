@@ -13,4 +13,5 @@ urlpatterns = [
     ),
     path('orders/', views.order_list, name='orders'),
     path('orders/<str:order_number>/', views.order_detail, name='order_detail'),
+    path('orders/<str:order_number>/cancel/', views.cancel_order, name='cancel_order'),
 ]

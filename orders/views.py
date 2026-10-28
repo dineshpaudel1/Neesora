@@ -4,16 +4,17 @@ from uuid import UUID, uuid4
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import CustomerProfile
 
 from .forms import CheckoutForm
 from .models import Order
 from .services import CheckoutError, create_order, get_cart_items, get_shipping_fee
+from .workflow import transition_order
 
 
 def _checkout_session_key(request):
@@ -68,6 +69,7 @@ def _confirmation_redirect(order):
     )
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def checkout(request):
     session_key = _checkout_session_key(request)
@@ -199,3 +201,35 @@ def order_confirmation(request, order_number, access_token):
     elif not secrets.compare_digest(order.guest_access_token, access_token):
         raise PermissionDenied
     return render(request, "orders/confirmation.html", {"order": order})
+
+
+# Statuses that a customer is permitted to cancel.
+_CUSTOMER_CANCELLABLE_STATUSES = {Order.STATUS_PENDING}
+
+
+@login_required
+@require_POST
+def cancel_order(request, order_number):
+    order = get_object_or_404(
+        Order.objects.filter(user=request.user),
+        order_number=order_number,
+    )
+    if order.order_status not in _CUSTOMER_CANCELLABLE_STATUSES:
+        messages.error(
+            request,
+            "This order can no longer be cancelled. "
+            "Please contact us if you need assistance.",
+        )
+        return redirect("orders:order_detail", order_number=order_number)
+    try:
+        transition_order(
+            order_id=order.pk,
+            new_status=Order.STATUS_CANCELLED,
+            actor=request.user,
+            note="Cancelled by customer.",
+        )
+    except ValidationError as exc:
+        messages.error(request, "; ".join(exc.messages))
+    else:
+        messages.success(request, f"Order {order.order_number} has been cancelled.")
+    return redirect("orders:order_detail", order_number=order_number)

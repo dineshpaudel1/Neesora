@@ -1,38 +1,45 @@
+{% with images=product.images.all %}
 <article class="product-card">
     <div class="product-card-image-wrap-outer">
-        <a class="product-card-image-link" href="{% url 'products:product_detail' product.slug %}" aria-label="View {{ product.name }}" tabindex="-1">
+        <a class="product-card-image-link{% if images.1 %} has-secondary{% endif %}" href="{% url 'products:product_detail' product.slug %}" aria-label="View {{ product.name }}">
             <div class="product-card-image-wrap">
-                {% with product.images.all|first as primary_image %}
-                    {% if primary_image %}
+                {% if images.0 %}
+                    <img
+                        class="product-card-image product-card-image--primary"
+                        src="{{ images.0.image.url }}"
+                        alt="{{ images.0.alt_text|default:product.name }}"
+                        loading="lazy"
+                        decoding="async"
+                    >
+                    {% if images.1 %}
                         <img
-                            src="{{ primary_image.image.url }}"
-                            alt="{{ primary_image.alt_text|default:product.name }}"
-                            class="product-card-image"
+                            class="product-card-image product-card-image--secondary"
+                            src="{{ images.1.image.url }}"
+                            alt="{{ images.1.alt_text|default:product.name }} — detail view"
                             loading="lazy"
                             decoding="async"
                         >
-                    {% else %}
-                        <div class="product-card-placeholder" role="img" aria-label="Product image not yet available">
-                            <span aria-hidden="true">N</span>
-                        </div>
                     {% endif %}
-                {% endwith %}
+                {% else %}
+                    <div class="product-card-placeholder" role="img" aria-label="{{ product.name }} — image coming soon">
+                        <span aria-hidden="true">N</span>
+                    </div>
+                {% endif %}
             </div>
         </a>
-        {% if product.discount_price is not None or product.is_new_arrival or product.is_best_seller %}
+
+        {% if product.discount_price is not None or product.is_new_arrival %}
         <div class="product-card-badges" aria-hidden="true">
-            {% if product.discount_price is not None %}
-                <span class="badge badge-sale">-{{ product.discount_percentage|floatformat:0 }}%</span>
-            {% endif %}
             {% if product.is_new_arrival %}
                 <span class="badge badge-new">New</span>
             {% endif %}
-            {% if product.is_best_seller %}
-                <span class="badge badge-bestseller">Popular</span>
+            {% if product.discount_price is not None %}
+                <span class="badge badge-sale">—{{ product.discount_percentage|floatformat:0 }}%</span>
             {% endif %}
         </div>
         {% endif %}
     </div>
+
     <div class="product-card-content">
         <p class="product-category">{{ product.category.name }}</p>
         <h3><a href="{% url 'products:product_detail' product.slug %}">{{ product.name }}</a></h3>
@@ -45,27 +52,22 @@
             {% endif %}
         </div>
         <div class="product-card-actions">
-            <a class="product-card-details" href="{% url 'products:product_detail' product.slug %}">View details</a>
             {% if product.is_available %}
                 <form method="post" action="{% url 'cart:add_to_cart' product.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="quantity" value="1">
                     <button
-                        class="button button-dark product-card-buy"
+                        class="product-card-buy"
                         type="submit"
                         name="next"
                         value="{{ request.get_full_path }}"
                     >Add to bag</button>
-                    <button
-                        class="button button-secondary product-card-buy-now"
-                        type="submit"
-                        name="next"
-                        value="{% url 'orders:checkout' %}"
-                    >Buy now</button>
                 </form>
             {% else %}
-                <span class="product-card-out-of-stock" aria-label="Out of stock">Out of stock</span>
+                <span class="product-card-out-of-stock">Out of stock</span>
             {% endif %}
+            <a class="product-card-details" href="{% url 'products:product_detail' product.slug %}">View details</a>
         </div>
     </div>
 </article>
+{% endwith %}

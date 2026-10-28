@@ -31,18 +31,20 @@ class ProductCardPurchaseTests(TestCase):
             product_status=Product.STATUS_PUBLISHED,
         )
 
-    def test_shop_card_displays_add_to_bag_and_posts_to_cart(self):
+    def test_shop_card_displays_add_to_bag_and_view_details_and_posts_to_cart(self):
+        # "Buy now" was removed from the card — the card now has a single
+        # "Add to bag" button and a "View details" link.
         shop_url = reverse("products:shop")
         response = self.client.get(shop_url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Add to bag")
-        self.assertContains(response, "Buy now")
+        self.assertContains(response, "View details")
+        self.assertNotContains(response, "Buy now")
         self.assertContains(
             response,
             reverse("cart:add_to_cart", args=[self.product.pk]),
         )
-        self.assertNotContains(response, "Filter products")
 
         added = self.client.post(
             reverse("cart:add_to_cart", args=[self.product.pk]),

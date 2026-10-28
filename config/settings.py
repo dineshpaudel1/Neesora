@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'reviews.apps.ReviewsConfig',
     'coupons.apps.CouponsConfig',
     'core.apps.CoreConfig',
-]
+] + (['django_browser_reload'] if DEBUG else [])
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -61,7 +61,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+] + (['django_browser_reload.middleware.BrowserReloadMiddleware'] if DEBUG else [])
 
 ROOT_URLCONF = 'config.urls'
 
